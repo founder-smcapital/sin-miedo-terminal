@@ -1,0 +1,6 @@
+{
+  "name": "Sin Miedo Capital Portal",
+  "description": "Dark-editorial macro finance portal for Sin Miedo Capital featuring macro debt-servicing velocity risk radar, net Fed liquidity drivers, auction tail metrics, cross-asset volatility divergence, BoJ Yen intervention dynamics, and Iranian shadow-fleet tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

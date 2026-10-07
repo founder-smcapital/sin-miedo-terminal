@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sin Miedo Capital Portal Firebase Blueprint",
+  "description": "Firestore schema and authentication rules for institutional portal members",
+  "entities": {
+    "User": {
+      "collection": "users",
+      "fields": {
+        "id": { "type": "string", "description": "Auth UID" },
+        "email": { "type": "string", "description": "Member email" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "role": { "type": "string", "description": "Institutional role: admin, analyst, partner, founding_member" },
+        "tier": { "type": "string", "description": "Founding Member, Institutional Desk, Sovereign Wealth" },
+        "deskCode": { "type": "string", "description": "Desk identifier code" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "lastLoginAt": { "type": "string", "description": "ISO timestamp" },
+        "preferredDesk": { "type": "string", "description": "Default engine view preference" },
+        "calmModeDefault": { "type": "boolean", "description": "Sensory calm mode setting" }
+      },
+      "rules": {
+        "read": "auth != null",
+        "write": "auth != null && auth.uid == resource.data.id"
+      }
+    },
+    "DeskNote": {
+      "collection": "desk_notes",
+      "fields": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "engine": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "rules": {
+        "read": "auth != null",
+        "write": "auth != null && auth.uid == request.resource.data.userId"
+      }
+    },
+    "CustomAlert": {
+      "collection": "custom_alerts",
+      "fields": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "asset": { "type": "string" },
+        "condition": { "type": "string" },
+        "threshold": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "rules": {
+        "read": "auth != null && auth.uid == resource.data.userId",
+        "write": "auth != null && auth.uid == request.resource.data.userId"
+      }
+    }
+  }
+}
