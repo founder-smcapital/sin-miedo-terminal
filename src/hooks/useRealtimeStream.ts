@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MacroDataState } from "../types";
 
 export interface L2DepthTick {
@@ -266,10 +266,25 @@ export function useRealtimeStream(
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const onMacroUpdateRef = useRef(onMacroUpdate);
+  const packetCountRef = useRef(0);
+  const lastPacketTimeRef = useRef<number | null>(null);
+  const lastTelemetryFlushRef = useRef<number>(0);
+  const lastL2TickTimeRef = useRef<number>(0);
 
   useEffect(() => {
     onMacroUpdateRef.current = onMacroUpdate;
   }, [onMacroUpdate]);
+
+  const flushTelemetry = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTelemetryFlushRef.current >= 3000) {
+      lastTelemetryFlushRef.current = now;
+      setPacketsReceived(packetCountRef.current);
+      if (lastPacketTimeRef.current) {
+        setLastPacketTime(lastPacketTimeRef.current);
+      }
+    }
+  }, []);
 
   const connectStream = useCallback(() => {
     if (eventSourceRef.current) {
@@ -305,9 +320,10 @@ export function useRealtimeStream(
       es.addEventListener("macro-pulse", (e) => {
         try {
           const data = JSON.parse(e.data);
-          setPacketsReceived((prev) => prev + 1);
-          setLastPacketTime(Date.now());
-          setIsConnected(true);
+          packetCountRef.current += 1;
+          lastPacketTimeRef.current = Date.now();
+          flushTelemetry();
+          setIsConnected((prev) => (prev ? prev : true));
           if (onMacroUpdateRef.current) {
             onMacroUpdateRef.current(data);
           }
@@ -319,9 +335,15 @@ export function useRealtimeStream(
       es.addEventListener("l2-depth", (e) => {
         try {
           const tick = JSON.parse(e.data);
-          setL2Tick(tick);
-          setPacketsReceived((prev) => prev + 1);
-          setLastPacketTime(Date.now());
+          packetCountRef.current += 1;
+          lastPacketTimeRef.current = Date.now();
+          const now = Date.now();
+          // Throttle L2 depth state renders to at most 1 every 1500ms to keep client CPU cool
+          if (now - lastL2TickTimeRef.current >= 1500) {
+            lastL2TickTimeRef.current = now;
+            setL2Tick(tick);
+          }
+          flushTelemetry();
         } catch (err) {
           // ignore
         }
@@ -359,7 +381,11 @@ export function useRealtimeStream(
           const data = JSON.parse(e.data);
           if (data.t) {
             const transit = Math.max(8, Math.min(65, Date.now() - data.t));
-            setLatencyMs(transit);
+            // Only update latency state when elapsed to prevent micro-jitter render loops
+            const now = Date.now();
+            if (now - lastTelemetryFlushRef.current >= 3000) {
+              setLatencyMs(transit);
+            }
           }
         } catch (err) {
           // ignore
@@ -374,7 +400,7 @@ export function useRealtimeStream(
       console.warn("Direct stream gateway fallback to polling:", err);
       setIsConnected(false);
     }
-  }, [mode]);
+  }, [mode, flushTelemetry]);
 
   useEffect(() => {
     connectStream();
@@ -394,26 +420,49 @@ export function useRealtimeStream(
     connectStream();
   }, [connectStream]);
 
-  return {
-    isConnected,
-    protocol,
-    gateway,
-    latencyMs,
-    packetsReceived,
-    lastPacketTime,
-    mode,
-    l2Tick,
-    openMarketData,
-    isOpenMarketVerifying,
-    triggerOpenMarketVerify,
-    finnhubData,
-    isFinnhubVerifying,
-    triggerFinnhubVerify,
-    polygonData,
-    isPolygonVerifying,
-    triggerPolygonVerify,
-    toggleMode,
-    reconnect
-  };
+  return useMemo(
+    () => ({
+      isConnected,
+      protocol,
+      gateway,
+      latencyMs,
+      packetsReceived,
+      lastPacketTime,
+      mode,
+      l2Tick,
+      openMarketData,
+      isOpenMarketVerifying,
+      triggerOpenMarketVerify,
+      finnhubData,
+      isFinnhubVerifying,
+      triggerFinnhubVerify,
+      polygonData,
+      isPolygonVerifying,
+      triggerPolygonVerify,
+      toggleMode,
+      reconnect,
+    }),
+    [
+      isConnected,
+      protocol,
+      gateway,
+      latencyMs,
+      packetsReceived,
+      lastPacketTime,
+      mode,
+      l2Tick,
+      openMarketData,
+      isOpenMarketVerifying,
+      triggerOpenMarketVerify,
+      finnhubData,
+      isFinnhubVerifying,
+      triggerFinnhubVerify,
+      polygonData,
+      isPolygonVerifying,
+      triggerPolygonVerify,
+      toggleMode,
+      reconnect,
+    ]
+  );
 }
 

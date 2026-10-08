@@ -583,16 +583,24 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isAutoRefreshActive, streamInfo.isConnected, streamInfo.mode]);
 
-  const handleOpenTerminal = (customPrompt?: string) => {
+  const handleOpenTerminal = useCallback((customPrompt?: string) => {
     setTerminalInitialPrompt(customPrompt);
     setIntelligenceInitialTab("strategy");
     setIsIntelligenceDrawerOpen(true);
-  };
+  }, []);
 
-  const handleOpenSummaryDrawer = () => {
+  const handleOpenSummaryDrawer = useCallback(() => {
     setIntelligenceInitialTab("summary");
     setIsIntelligenceDrawerOpen(true);
-  };
+  }, []);
+
+  const handleOpenTierModal = useCallback(() => {
+    setIsTierModalOpen(true);
+  }, []);
+
+  const handleOpenAuthModal = useCallback(() => {
+    setIsAuthModalOpen(true);
+  }, []);
 
   const handleLoginSuccess = (session: UserSession) => {
     setUserSession(session);
@@ -657,12 +665,12 @@ export default function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           userSession={userSession}
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onOpenAuthModal={handleOpenAuthModal}
           onLogout={handleLogout}
-          onOpenTerminal={() => handleOpenTerminal()}
+          onOpenTerminal={handleOpenTerminal}
           currency={currency}
           onCurrencyChange={handleCurrencyChange}
-          onOpenTierModal={() => setIsTierModalOpen(true)}
+          onOpenTierModal={handleOpenTierModal}
         />
 
         {/* 3. Main Body Container */}
@@ -670,14 +678,14 @@ export default function App() {
           {activeTab === "dashboards" && (
             <DashboardGrid
               macroData={macroData}
-              onOpenTerminal={() => handleOpenTerminal()}
+              onOpenTerminal={handleOpenTerminal}
               onOpenSummaryDrawer={handleOpenSummaryDrawer}
               onManualRefresh={fetchMacroPulse}
               refreshKey={refreshCount}
               isCalmMode={isCalmMode}
               userSession={userSession}
               currency={currency}
-              onOpenTierModal={() => setIsTierModalOpen(true)}
+              onOpenTierModal={handleOpenTierModal}
             />
           )}
 

@@ -50,7 +50,6 @@ import {
 } from "../data/worldMapData";
 import { ChokepointRiskSparkline } from "./ChokepointRiskSparkline";
 import { MalaccaScsCorridorMap } from "./MalaccaScsCorridorMap";
-import malaccaScsVisual from "../assets/images/malacca_scs_flow_1788971019380.jpg";
 
 interface ChokepointHeatmapProps {
   macroData: MacroDataState;
@@ -61,7 +60,7 @@ interface ChokepointHeatmapProps {
 
 type ViewPreset = "global" | "mideast" | "redsea" | "indopacific";
 
-export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
+const ChokepointHeatmapComponent: React.FC<ChokepointHeatmapProps> = ({
   macroData,
   onOpenWarRiskEngine,
   isExpanded: propIsExpanded,
@@ -90,6 +89,16 @@ export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
   const [inspectorTab, setInspectorTab] = useState<"chokepoint" | "events" | "pipelines">("chokepoint");
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [showScsVisualModal, setShowScsVisualModal] = useState<boolean>(false);
+  const [satelliteImageSrc, setSatelliteImageSrc] = useState<string | undefined>(undefined);
+
+  const handleOpenScsModal = () => {
+    setShowScsVisualModal(true);
+    if (!satelliteImageSrc) {
+      import("../assets/images/malacca_scs_flow_1788971019380.jpg").then((m) => {
+        setSatelliteImageSrc(m.default);
+      });
+    }
+  };
   const [showEventMonitorDrawer, setShowEventMonitorDrawer] = useState<boolean>(false);
   const [showInjectEventModal, setShowInjectEventModal] = useState<boolean>(false);
   const [targetedEventReticle, setTargetedEventReticle] = useState<{ lon: number; lat: number; id: string; label: string } | null>(null);
@@ -1190,7 +1199,7 @@ export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
 
           {/* Malacca & SCS Flow Vector Map Trigger */}
           <button
-            onClick={() => setShowScsVisualModal(true)}
+            onClick={handleOpenScsModal}
             className="px-2.5 py-1 rounded bg-[#38BDF8]/15 hover:bg-[#38BDF8]/25 border border-[#38BDF8]/40 text-[#38BDF8] text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm"
             title="View Malacca to South China Sea Maritime Trade Flow Vector Corridor Map"
           >
@@ -2284,7 +2293,7 @@ export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
               selectedChokepoint.id === "malacca" ||
               selectedChokepoint.id === "ningbo-zhoushan") && (
               <button
-                onClick={() => setShowScsVisualModal(true)}
+                onClick={handleOpenScsModal}
                 className="w-full py-1.5 bg-[#38BDF8]/15 hover:bg-[#38BDF8]/25 text-[#38BDF8] border border-[#38BDF8]/35 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -2526,7 +2535,7 @@ export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
                 setActivePreset("indopacific");
                 setShowScsVisualModal(false);
               }}
-              satelliteImageSrc={malaccaScsVisual}
+              satelliteImageSrc={satelliteImageSrc}
             />
           </div>
         </div>
@@ -3121,3 +3130,5 @@ export const ChokepointHeatmap: React.FC<ChokepointHeatmapProps> = ({
     </>
   );
 };
+
+export const ChokepointHeatmap = React.memo(ChokepointHeatmapComponent);

@@ -1,19 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { motion, useReducedMotion, Variants } from "motion/react";
 import { MacroDataState, UserSession, Currency } from "../types";
 import { YenInterventionEngine } from "./engines/YenInterventionEngine";
 import { IbexPropEngine } from "./engines/IbexPropEngine";
-import { MiddleEastRiskEngine, MiddleEastSubTab } from "./engines/MiddleEastRiskEngine";
-import { IranShadowFleetEngine } from "./engines/IranShadowFleetEngine";
 import { AssetSparklines } from "./AssetSparklines";
-import { GoldHistoricalChart } from "./GoldHistoricalChart";
-import { GprHistoricalChart } from "./GprHistoricalChart";
-import { MacroCorrelationMatrix } from "./MacroCorrelationMatrix";
-import { ChokepointHeatmap } from "./ChokepointHeatmap";
-import { DebtServicingRiskRadar } from "./DebtServicingRiskRadar";
-import { LiquidityDriverTracker } from "./LiquidityDriverTracker";
-import { VixVolatilityIndexChart } from "./VixVolatilityIndexChart";
+import type { MiddleEastSubTab } from "./engines/MiddleEastRiskEngine";
 import { X, Layers, Sparkles, RefreshCw, FileDown, Crosshair, TrendingUp, Flame, Activity, Shield, Lock, Unlock, ArrowRight, Award, Building2, Zap, Globe, DollarSign } from "lucide-react";
+
+// Progressive High-Performance Chunking: Heavy analytical, Recharts & GIS modules loaded on-demand
+const MiddleEastRiskEngine = lazy(() => import("./engines/MiddleEastRiskEngine").then((m) => ({ default: m.MiddleEastRiskEngine })));
+const IranShadowFleetEngine = lazy(() => import("./engines/IranShadowFleetEngine").then((m) => ({ default: m.IranShadowFleetEngine })));
+const GoldHistoricalChart = lazy(() => import("./GoldHistoricalChart").then((m) => ({ default: m.GoldHistoricalChart })));
+const GprHistoricalChart = lazy(() => import("./GprHistoricalChart").then((m) => ({ default: m.GprHistoricalChart })));
+const MacroCorrelationMatrix = lazy(() => import("./MacroCorrelationMatrix").then((m) => ({ default: m.MacroCorrelationMatrix })));
+const ChokepointHeatmap = lazy(() => import("./ChokepointHeatmap").then((m) => ({ default: m.ChokepointHeatmap })));
+const DebtServicingRiskRadar = lazy(() => import("./DebtServicingRiskRadar").then((m) => ({ default: m.DebtServicingRiskRadar })));
+const LiquidityDriverTracker = lazy(() => import("./LiquidityDriverTracker").then((m) => ({ default: m.LiquidityDriverTracker })));
+const VixVolatilityIndexChart = lazy(() => import("./VixVolatilityIndexChart").then((m) => ({ default: m.VixVolatilityIndexChart })));
+
+const WidgetFallback: React.FC<{ label: string; minHeight?: string }> = ({ label, minHeight = "240px" }) => (
+  <div
+    style={{ minHeight }}
+    className="w-full rounded-xl bg-[#0b121e]/60 border border-[#B08D57]/20 p-5 flex flex-col items-center justify-center text-center my-2 select-none"
+  >
+    <div className="w-5 h-5 rounded-full border-2 border-[#B08D57]/30 border-t-[#B08D57] animate-spin mb-2" />
+    <span className="text-[10px] font-mono-data text-[#BAC7D5]/70 tracking-widest uppercase">
+      Hydrating {label}...
+    </span>
+  </div>
+);
 
 interface DashboardGridProps {
   macroData: MacroDataState;
@@ -62,7 +77,7 @@ const calmCardVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
-export const DashboardGrid: React.FC<DashboardGridProps> = ({
+const DashboardGridComponent: React.FC<DashboardGridProps> = ({
   macroData,
   onOpenTerminal,
   onOpenSummaryDrawer,
@@ -285,13 +300,15 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
 
           {/* 2. Real-Time VIX Volatility Index: Option Gamma Surface & Volatility Spikes */}
           <motion.div variants={activeCardVariants}>
-            <VixVolatilityIndexChart
-              macroData={macroData}
-              isCalmMode={calm}
-              onOpenTerminal={(prompt) => {
-                onOpenTerminal(prompt);
-              }}
-            />
+            <Suspense fallback={<WidgetFallback label="VIX Options Volatility Surface" minHeight="280px" />}>
+              <VixVolatilityIndexChart
+                macroData={macroData}
+                isCalmMode={calm}
+                onOpenTerminal={(prompt) => {
+                  onOpenTerminal(prompt);
+                }}
+              />
+            </Suspense>
           </motion.div>
 
           {/* 3. Global Benchmarks, Equities & $BTC Prop Execution Systems */}
@@ -330,7 +347,9 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
 
           {/* 5. Visual Macro Correlation & Transmission Matrix Component (9x9) */}
           <motion.div variants={activeCardVariants}>
-            <MacroCorrelationMatrix macroData={macroData} />
+            <Suspense fallback={<WidgetFallback label="Cross-Asset Covariance Matrix" minHeight="320px" />}>
+              <MacroCorrelationMatrix macroData={macroData} />
+            </Suspense>
           </motion.div>
 
           {/* Trader Mode Switch to Full Macro Prompt Card */}
@@ -386,18 +405,22 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
 
           {/* Visual Macro Correlation & Transmission Matrix Component (9x9) */}
           <motion.div variants={activeCardVariants}>
-            <MacroCorrelationMatrix macroData={macroData} />
+            <Suspense fallback={<WidgetFallback label="Cross-Asset Covariance Matrix" minHeight="320px" />}>
+              <MacroCorrelationMatrix macroData={macroData} />
+            </Suspense>
           </motion.div>
 
           {/* Real-Time VIX Volatility Index Component: Intraday Volatility Spikes & Option Gamma Surface */}
           <motion.div variants={activeCardVariants}>
-            <VixVolatilityIndexChart
-              macroData={macroData}
-              isCalmMode={calm}
-              onOpenTerminal={(prompt) => {
-                onOpenTerminal(prompt);
-              }}
-            />
+            <Suspense fallback={<WidgetFallback label="VIX Options Volatility Surface" minHeight="280px" />}>
+              <VixVolatilityIndexChart
+                macroData={macroData}
+                isCalmMode={calm}
+                onOpenTerminal={(prompt) => {
+                  onOpenTerminal(prompt);
+                }}
+              />
+            </Suspense>
           </motion.div>
 
           {/* Macro Time-Series Charts: Gold Supercycle & GPR 24M Historical Trajectory */}
@@ -442,25 +465,29 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
               </div>
             </div>
 
-            {activeMacroChart === "gold" ? (
-              <GoldHistoricalChart macroData={macroData} />
-            ) : (
-              <GprHistoricalChart
-                currentLiveGpr={macroData.engines.middleEastWarRisk.gprIndex}
-                currentLiveBrent={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
-              />
-            )}
+            <Suspense fallback={<WidgetFallback label="Historical Quantitative Time-Series" minHeight="360px" />}>
+              {activeMacroChart === "gold" ? (
+                <GoldHistoricalChart macroData={macroData} />
+              ) : (
+                <GprHistoricalChart
+                  currentLiveGpr={macroData.engines.middleEastWarRisk.gprIndex}
+                  currentLiveBrent={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
+                />
+              )}
+            </Suspense>
           </motion.div>
 
           {/* D3-Based Geographical Heatmap: Global Maritime Chokepoints & War-Risk Overlay */}
           <motion.div variants={activeCardVariants}>
-            <ChokepointHeatmap
-              macroData={macroData}
-              onOpenWarRiskEngine={() => {
-                setExpandedMiddleEastTab("Maritime Chokepoints");
-                setExpandedEngine("middleEast");
-              }}
-            />
+            <Suspense fallback={<WidgetFallback label="Maritime Chokepoint Heatmap & Cartography" minHeight="420px" />}>
+              <ChokepointHeatmap
+                macroData={macroData}
+                onOpenWarRiskEngine={() => {
+                  setExpandedMiddleEastTab("Maritime Chokepoints");
+                  setExpandedEngine("middleEast");
+                }}
+              />
+            </Suspense>
           </motion.div>
 
           {/* Terminal Access Tier Clearance Status Strip */}
@@ -565,18 +592,20 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
                   </button>
                 )}
               </div>
-              <MiddleEastRiskEngine
-                data={macroData.engines.middleEastWarRisk}
-                onExpandToggle={() => {
-                  setExpandedMiddleEastTab("Maritime Chokepoints");
-                  setExpandedEngine("middleEast");
-                }}
-                onExpandWithTab={(tab) => {
-                  setExpandedMiddleEastTab(tab);
-                  setExpandedEngine("middleEast");
-                }}
-                isExpanded={false}
-              />
+              <Suspense fallback={<WidgetFallback label="Middle East War-Risk Engine" minHeight="280px" />}>
+                <MiddleEastRiskEngine
+                  data={macroData.engines.middleEastWarRisk}
+                  onExpandToggle={() => {
+                    setExpandedMiddleEastTab("Maritime Chokepoints");
+                    setExpandedEngine("middleEast");
+                  }}
+                  onExpandWithTab={(tab) => {
+                    setExpandedMiddleEastTab(tab);
+                    setExpandedEngine("middleEast");
+                  }}
+                  isExpanded={false}
+                />
+              </Suspense>
             </motion.div>
 
             {/* Engine 3: Iranian Oil Shadow-Fleet Tracking */}
@@ -600,12 +629,14 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
                   </button>
                 )}
               </div>
-              <IranShadowFleetEngine
-                data={macroData.engines.iranShadowFleet}
-                brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
-                onExpandToggle={() => setExpandedEngine("shadowFleet")}
-                isExpanded={expandedEngine === "shadowFleet"}
-              />
+              <Suspense fallback={<WidgetFallback label="Iran Shadow Fleet AIS Tracking" minHeight="280px" />}>
+                <IranShadowFleetEngine
+                  data={macroData.engines.iranShadowFleet}
+                  brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
+                  onExpandToggle={() => setExpandedEngine("shadowFleet")}
+                  isExpanded={expandedEngine === "shadowFleet"}
+                />
+              </Suspense>
             </motion.div>
           </div>
 
@@ -619,14 +650,18 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
               <span className="text-[#5A687C]">FED H.4.1 • TREASURY BOND BUYBACKS ($6B/WK) • NET FED LIQUIDITY</span>
             </div>
 
-            {/* 1. US Liquidity Driver Telemetry (Transmission Tracker & Debt Buyback Monitor) - Placed Above Net Liquidity Drivers Dashboard */}
+            {/* 1. US Liquidity Driver Telemetry (Transmission Tracker & Debt Buyback Monitor) */}
             <div id="us-liquidity-driver-telemetry-dashboard">
-              <LiquidityDriverTracker isCalmMode={calm} />
+              <Suspense fallback={<WidgetFallback label="US Liquidity Transmission Tracker" minHeight="260px" />}>
+                <LiquidityDriverTracker isCalmMode={calm} />
+              </Suspense>
             </div>
 
             {/* 2. Net Liquidity Drivers Dashboard & Macro Debt-Servicing Velocity Risk Radar */}
             <div id="net-liquidity-drivers-dashboard">
-              <DebtServicingRiskRadar isCalmMode={calm} />
+              <Suspense fallback={<WidgetFallback label="Net Liquidity & Sovereign Debt Radar" minHeight="260px" />}>
+                <DebtServicingRiskRadar isCalmMode={calm} />
+              </Suspense>
             </div>
           </motion.div>
         </>
@@ -676,20 +711,24 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
                 />
               )}
               {expandedEngine === "middleEast" && (
-                <MiddleEastRiskEngine
-                  data={macroData.engines.middleEastWarRisk}
-                  onExpandToggle={() => setExpandedEngine(null)}
-                  isExpanded={true}
-                  initialSubTab={expandedMiddleEastTab}
-                />
+                <Suspense fallback={<WidgetFallback label="Middle East War-Risk Expanded View" minHeight="360px" />}>
+                  <MiddleEastRiskEngine
+                    data={macroData.engines.middleEastWarRisk}
+                    onExpandToggle={() => setExpandedEngine(null)}
+                    isExpanded={true}
+                    initialSubTab={expandedMiddleEastTab}
+                  />
+                </Suspense>
               )}
               {expandedEngine === "shadowFleet" && (
-                <IranShadowFleetEngine
-                  data={macroData.engines.iranShadowFleet}
-                  brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
-                  onExpandToggle={() => setExpandedEngine(null)}
-                  isExpanded={true}
-                />
+                <Suspense fallback={<WidgetFallback label="Shadow Fleet Expanded View" minHeight="360px" />}>
+                  <IranShadowFleetEngine
+                    data={macroData.engines.iranShadowFleet}
+                    brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
+                    onExpandToggle={() => setExpandedEngine(null)}
+                    isExpanded={true}
+                  />
+                </Suspense>
               )}
             </div>
           </div>
@@ -698,3 +737,5 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
     </motion.div>
   );
 };
+
+export const DashboardGrid = React.memo(DashboardGridComponent);

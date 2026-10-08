@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import compression from "compression";
 import { getAsset5dHistory } from "./src/data/futuresData";
 
 dotenv.config({ override: true });
@@ -44,6 +45,20 @@ const getHost = () => {
 
 const PORT = getPort();
 const HOST = getHost();
+
+// High-performance response compression (gzip/deflate), bypassing real-time SSE streams to avoid buffer delay
+app.use(
+  compression({
+    level: 6,
+    threshold: 1024,
+    filter: (req, res) => {
+      if (req.headers.accept?.includes("text/event-stream") || req.url.includes("/api/macro/stream")) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 app.use(express.json());
 
@@ -698,22 +713,6 @@ async function fetchNasdaqMarketPrices() {
           lastSync: Date.now(),
           source: "Nasdaq 100 / Yahoo Real-Time"
         };
-        if (typeof liveFuturesStore !== "undefined") {
-          if (liveFuturesStore.NQ) {
-            liveFuturesStore.NQ.price = liveNdx;
-            liveFuturesStore.NQ.changePct = changePct;
-            liveFuturesStore.NQ.changePts = Number((liveNdx - prevClose).toFixed(2));
-            liveFuturesStore.NQ.high = Math.max(liveFuturesStore.NQ.high, liveNdx);
-            liveFuturesStore.NQ.low = Math.min(liveFuturesStore.NQ.low, liveNdx);
-          }
-          if (liveFuturesStore.MNQ) {
-            liveFuturesStore.MNQ.price = liveNdx;
-            liveFuturesStore.MNQ.changePct = changePct;
-            liveFuturesStore.MNQ.changePts = Number((liveNdx - prevClose).toFixed(2));
-            liveFuturesStore.MNQ.high = Math.max(liveFuturesStore.MNQ.high, liveNdx);
-            liveFuturesStore.MNQ.low = Math.min(liveFuturesStore.MNQ.low, liveNdx);
-          }
-        }
         return;
       }
     }
@@ -1949,26 +1948,53 @@ function refreshFuturesSessionsAndCrypto() {
 
     // When the market is open (e.g. Sunday evening Globex reopen), apply realistic institutional micro-ticks
     if (c.isMarketOpen && !c.isWeekendClosed && sym !== "MBT") {
-      const step = sym === "ES" || sym === "MES" ? 0.25
-        : sym === "NQ" || sym === "MNQ" ? 0.50
-        : sym === "CL" || sym === "BZ" ? 0.01
-        : sym === "GC" ? 0.10
-        : sym === "VX" ? 0.05
-        : 0.5;
+      if (sym === "MES" && liveFuturesStore.ES) {
+        c.price = liveFuturesStore.ES.price;
+        c.prevClose = liveFuturesStore.ES.prevClose;
+        c.high = liveFuturesStore.ES.high;
+        c.low = liveFuturesStore.ES.low;
+        c.changePts = liveFuturesStore.ES.changePts;
+        c.changePct = liveFuturesStore.ES.changePct;
+        c.lastUpdated = new Date().toISOString();
+        c.source = "CME Globex Live Feed";
+      } else if (sym === "MNQ" && liveFuturesStore.NQ) {
+        c.price = liveFuturesStore.NQ.price;
+        c.prevClose = liveFuturesStore.NQ.prevClose;
+        c.high = liveFuturesStore.NQ.high;
+        c.low = liveFuturesStore.NQ.low;
+        c.changePts = liveFuturesStore.NQ.changePts;
+        c.changePct = liveFuturesStore.NQ.changePct;
+        c.lastUpdated = new Date().toISOString();
+        c.source = "CME Globex Live Feed";
+      } else {
+        const step = sym === "ES" ? 0.25
+          : sym === "NQ" ? 0.50
+          : sym === "CL" || sym === "BZ" ? 0.01
+          : sym === "GC" ? 0.10
+          : sym === "VX" ? 0.05
+          : 0.5;
 
-      // Deterministic smooth micro-jitter (oscillating within 1-2 ticks)
-      const tickDelta = Number((Math.sin(baseTickCount * 0.7 + sym.charCodeAt(0)) * step).toFixed(2));
-      const adjustedPrice = Number((c.price + tickDelta).toFixed(2));
-      c.changePts = Number((adjustedPrice - c.prevClose).toFixed(2));
-      c.changePct = Number(((c.changePts / c.prevClose) * 100).toFixed(2));
-      c.high = Math.max(c.high, adjustedPrice);
-      c.low = Math.min(c.low, adjustedPrice);
-      c.lastUpdated = new Date().toISOString();
-      c.source = "CME Globex Live Feed";
+        // Deterministic smooth micro-jitter (oscillating within 1-2 ticks)
+        const tickDelta = Number((Math.sin(baseTickCount * 0.7 + sym.charCodeAt(0)) * step).toFixed(2));
+        const adjustedPrice = Number((c.price + tickDelta).toFixed(2));
+        c.changePts = Number((adjustedPrice - c.prevClose).toFixed(2));
+        c.changePct = Number(((c.changePts / c.prevClose) * 100).toFixed(2));
+        c.high = Math.max(c.high, adjustedPrice);
+        c.low = Math.min(c.low, adjustedPrice);
+        c.lastUpdated = new Date().toISOString();
+        c.source = "CME Globex Live Feed";
+      }
     }
 
     if (c.priceHistory5d && c.priceHistory5d.length > 0) {
       c.priceHistory5d[c.priceHistory5d.length - 1].price = c.price;
+    }
+
+    // Always keep dynamic VWAP delta & side mathematically coherent
+    if (c.levels && c.levels.vwap) {
+      c.vwapDistPts = Number((c.price - c.levels.vwap).toFixed(2));
+      c.vwapDistPct = Number(((c.vwapDistPts / c.levels.vwap) * 100).toFixed(2));
+      c.vwapSide = c.price >= c.levels.vwap ? "Above" : "Below";
     }
   }
 }
@@ -2039,6 +2065,17 @@ async function syncExternalFuturesPrices(): Promise<void> {
 
                 if (typeof liveP === "number" && !isNaN(liveP) && liveP > 0) {
                   liveFuturesStore[key] = buildContractState(key, liveP, prevClose, high, low, closes, sampled5d);
+
+                  // Maintain lockstep parity across Micro and Mini equivalents
+                  if (key === "ES" && liveFuturesStore.MES) {
+                    liveFuturesStore.MES = buildContractState("MES", liveP, prevClose, high, low, closes, sampled5d);
+                  } else if (key === "MES" && liveFuturesStore.ES) {
+                    liveFuturesStore.ES = buildContractState("ES", liveP, prevClose, high, low, closes, sampled5d);
+                  } else if (key === "NQ" && liveFuturesStore.MNQ) {
+                    liveFuturesStore.MNQ = buildContractState("MNQ", liveP, prevClose, high, low, closes, sampled5d);
+                  } else if (key === "MNQ" && liveFuturesStore.NQ) {
+                    liveFuturesStore.NQ = buildContractState("NQ", liveP, prevClose, high, low, closes, sampled5d);
+                  }
 
                   // Directly update liveMarketStore for commodities and global equities
                   const calculatedChange = meta.regularMarketChangePercent != null

@@ -15,7 +15,7 @@ interface HeaderTickerProps {
   onToggleCalmMode?: () => void;
 }
 
-export const HeaderTicker: React.FC<HeaderTickerProps> = ({
+const HeaderTickerComponent: React.FC<HeaderTickerProps> = ({
   tickers,
   refreshIntervalSeconds = 15,
   onManualRefresh,
@@ -262,3 +262,5 @@ export const HeaderTicker: React.FC<HeaderTickerProps> = ({
     </div>
   );
 };
+
+export const HeaderTicker = React.memo(HeaderTickerComponent);

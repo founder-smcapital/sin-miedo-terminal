@@ -34,13 +34,16 @@ export default defineConfig(() => {
               ) {
                 return 'vendor-react';
               }
-              // 2. Heavy Data Visualization & D3 / Recharts engines
+              // 2. Recharts Data Visualization Engine
               if (
                 id.includes('/recharts/') ||
-                id.includes('/d3') ||
                 id.includes('/victory-vendor/')
               ) {
                 return 'vendor-charts';
+              }
+              // 2b. D3 Geospatial & Projection Engine (isolated for Chokepoint Cartography)
+              if (id.includes('/d3')) {
+                return 'vendor-d3';
               }
               // 3. Iconography (Lucide)
               if (id.includes('/lucide-react/')) {
