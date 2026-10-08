@@ -24,10 +24,6 @@ const getPort = () => {
     const parsed = parseInt(process.argv[portArgIndex + 1], 10);
     if (!isNaN(parsed)) return parsed;
   }
-  // In development, AI Studio environment proxy routes traffic to port 3000
-  if (process.env.NODE_ENV !== "production") {
-    return 3000;
-  }
   if (process.env.PORT) {
     const parsed = parseInt(process.env.PORT, 10);
     if (!isNaN(parsed)) return parsed;
