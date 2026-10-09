@@ -85,13 +85,10 @@ export default function App() {
       } catch (e) {}
     }
   };
-
-  // Auth State: checks sessionStorage and localStorage for seamless persistence
+// Auth State: checks sessionStorage for active session
   const [userSession, setUserSession] = useState<UserSession>(() => {
     try {
-      const saved =
-        sessionStorage.getItem("smc_authenticated_session") ||
-        localStorage.getItem("smc_authenticated_session");
+      const saved = sessionStorage.getItem("smc_authenticated_session");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.isAuthenticated) {
@@ -101,16 +98,12 @@ export default function App() {
     } catch (err) {
       // ignore
     }
+    // Gated by default: user must enter login credentials or sign in with Google
     return {
-      isAuthenticated: true,
-      uid: "usr-founding-persist",
-      email: "tradeinmotions@gmail.com",
-      name: "Institutional Partner",
-      tier: "Founding Member",
-      role: "founding_member",
-      passcode: "SMC-FOUNDING-2026",
-      deskAccess: DEFAULT_DESK_ACCESS,
-      loginTime: new Date().toLocaleTimeString()
+      isAuthenticated: false,
+      uid: "",
+      email: "",
+      tier: "Founding Member"
     };
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -124,6 +117,9 @@ export default function App() {
   // Firebase Auth State Listener & Cloud Firestore Sync
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Only auto-sync profile if the user explicitly authenticated in this active browser session
+      const hasActiveSession = sessionStorage.getItem("smc_authenticated_session");
+      if (firebaseUser && hasActiveSession) {    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
