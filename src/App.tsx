@@ -119,8 +119,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       // Only auto-sync profile if the user explicitly authenticated in this active browser session
       const hasActiveSession = sessionStorage.getItem("smc_authenticated_session");
-      if (firebaseUser && hasActiveSession) {    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+      if (firebaseUser && hasActiveSession) {
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const snap = await getDoc(userDocRef);
@@ -174,7 +173,6 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
-
   // Accessibility: Calm Mode (Subdues motion, pings, marquee scrolling, and card transitions for sensory sensitivity)
   const [isCalmMode, setIsCalmMode] = useState<boolean>(() => {
     try {
