@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Activity,
   Radio,
-  RefreshCw,
   Cpu,
   Database,
   Globe
@@ -265,21 +264,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </p>
           </div>
 
-          {/* Autopopulated Generic Credential Notice Banner */}
+         {/* Institutional Clearance Gateway Status Banner */}
           <div className="bg-[#0B1019] px-6 py-2.5 border-b border-[#222C3D] flex items-center justify-between text-xs font-mono-data">
-            <div className="flex items-center gap-2 text-[#10B981]">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-[11px]">Generic Credentials Autopopulated</span>
+            <div className="flex items-center gap-2 text-[#8292A6]">
+              <Lock className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              <span className="text-[11px] text-[#EDE9DE]">Institutional Authentication Gateway</span>
             </div>
-            <button
-              type="button"
-              onClick={handleResetToGeneric}
-              className="text-[10px] text-[#B08D57] hover:underline flex items-center gap-1"
-              title="Reset fields to generic demo credentials"
-            >
-              <RefreshCw className="w-2.5 h-2.5" />
-              <span>Reset Values</span>
-            </button>
+            <span className="text-[10px] text-[#B08D57] font-mono-data uppercase tracking-wider">
+              Whitelist Enforced
+            </span>
           </div>
 
           {/* Form */}
