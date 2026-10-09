@@ -36,27 +36,14 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  // Generic credentials pre-populated as requested:
-  const [email, setEmail] = useState("tradeinmotions@gmail.com");
-  const [password, setPassword] = useState("SinMiedo2026!");
+  // Manual credentials input (blank by default):
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [tier, setTier] = useState<ClearanceTier>("Founding Member");
-  const [passcode, setPasscode] = useState("SMC-FOUNDING-2026");
-  const [authMode, setAuthMode] = useState<"instant" | "credentials">("instant");
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [passcode, setPasscode] = useState("");
 
   const handleTierSelect = (selectedTier: ClearanceTier) => {
     setTier(selectedTier);
-    setPasscode(TIER_PASSCODES[selectedTier] || "SMC-FOUNDING-2026");
-  };
-
-  const handleResetToGeneric = () => {
-    setEmail("tradeinmotions@gmail.com");
-    setPassword("SinMiedo2026!");
-    setTier("Founding Member");
-    setPasscode("SMC-FOUNDING-2026");
-    setErrorMessage(null);
   };
 
   const triggerConfetti = () => {
