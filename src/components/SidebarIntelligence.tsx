@@ -113,13 +113,13 @@ export const SidebarIntelligence: React.FC<SidebarIntelligenceProps> = ({
       // Dynamic fallback
       setRelevantSummaries(generateRelevantExecutiveSummaries(macroData));
       setLastSyncTime(macroData.formattedTime || new Date().toTimeString().split(' ')[0] + ' UTC');
-      setSummaryMarkdown(`# SIN MIEDO CAPITAL // DAILY MACRO EXECUTIVE TAKEAWAYS
-**Classification**: Institutional Proprietary // **Refresh Cycle**: 15-Sec Live
+      setSummaryMarkdown(`# SIN MIEDO CAPITAL // INSTITUTIONAL MACRO DESK NOTES
+**Classification**: Institutional Proprietary // **Settlement Cycle**: Real-Time Continuous
 
 ### 1. MICRO S&P 500 ($MES) & DXY PREMARKET RESISTANCE
 The Dollar Index (DXY) is testing the **102.04 – 102.20** zone. In early premarket trade, USD strength caps commodity rallies (MCL Crude) and creates valuation translation friction for S&P 500 multinationals. However, with the Treasury continuing its **$24B/month ($6B/week) duration buyback operations**, liquidity plumbing remains accommodative. **Desk Strategy**: Buy shallow morning pullbacks into 5,735.00 – 5,742.00 (VWAP shelf) with a hard invalidation below 5,720.50 (Overnight Low).
 
-### 2. US-YEN STEALTH INTERVENTION EXECUTION (${macroData.engines.yenIntervention.defcon})
+### 2. US-YEN MOF INTERVENTION EXECUTION & DESK POSITIONING
 The USD/JPY spot has stabilized around **${macroData.engines.yenIntervention.spot}** (${macroData.engines.yenIntervention.change}) following an unannounced **quiet (stealth) intervention** conducted by the Japanese Ministry of Finance (MoF) and Bank of Japan. The critical 160.50 threshold was defended, causing unilateral intervention odds to contract to **${macroData.engines.yenIntervention.interventionOdds}%**. Desk bias: *${macroData.engines.yenIntervention.deskPosition}*.
 
 ### 3. IBEX 35 DIRECTIONAL EXECUTION SYSTEM

@@ -388,27 +388,27 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
           </div>
         </div>
 
-        {/* Quant Key Levels Grid */}
+        {/* Auction Structure Reference Matrix */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-black/40 border border-white/5 rounded p-2.5 text-[10px] font-mono-data">
           <div>
-            <span className="text-[#8292A6] text-[8.5px] uppercase block">Entry Zone</span>
+            <span className="text-[#8292A6] text-[8.5px] uppercase block">Auction Entry Corridor</span>
             <span className="text-emerald-400 font-bold">{activeSetup.entryZone}</span>
           </div>
           <div>
-            <span className="text-[#8292A6] text-[8.5px] uppercase block">Invalidation (Stop)</span>
+            <span className="text-[#8292A6] text-[8.5px] uppercase block">Structural Invalidation</span>
             <span className="text-rose-400 font-bold">{activeSetup.invalidation}</span>
           </div>
           <div>
-            <span className="text-[#8292A6] text-[8.5px] uppercase block">Targets (R1 / R2)</span>
+            <span className="text-[#8292A6] text-[8.5px] uppercase block">Expansion Targets (R1 / R2)</span>
             <span className="text-[#EDE9DE] font-bold">{activeSetup.target1} / {activeSetup.target2}</span>
           </div>
           <div>
-            <span className="text-[#8292A6] text-[8.5px] uppercase block">Risk / Reward</span>
+            <span className="text-[#8292A6] text-[8.5px] uppercase block">Asymmetric R:R</span>
             <span className="text-[#B08D57] font-bold">{activeSetup.riskReward}</span>
           </div>
         </div>
 
-        {/* Detail View Mode Switcher: Strategy Thesis vs Key Levels vs Prop Sizing */}
+        {/* Detail View Mode Switcher: Macro Thesis vs Auction Levels vs Risk Sizing */}
         <div className="flex items-center gap-1 pt-1 border-t border-white/5">
           <button
             onClick={() => setActiveDetailView("strategy")}
@@ -419,7 +419,7 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
             }`}
           >
             <Target className="w-3 h-3 text-[#B08D57]" />
-            <span>Strategy Behind Position</span>
+            <span>Macro &amp; Orderflow Thesis</span>
           </button>
 
           <button
@@ -431,7 +431,7 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
             }`}
           >
             <Sliders className="w-3 h-3 text-[#B08D57]" />
-            <span>Value Area &amp; Key Levels</span>
+            <span>Auction Value Area &amp; Reference Levels</span>
           </button>
 
           <button
@@ -443,7 +443,7 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
             }`}
           >
             <Shield className="w-3 h-3 text-[#B08D57]" />
-            <span>Institutional Risk &amp; Sizing</span>
+            <span>Capital Preservation &amp; Sizing</span>
           </button>
         </div>
 

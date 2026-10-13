@@ -23,7 +23,7 @@ const ViewLoadingFallback = () => (
   <div className="flex flex-col items-center justify-center min-h-[360px] w-full p-8 text-center bg-[#0d1420]/40 border border-[#B08D57]/20 rounded-xl my-6">
     <div className="w-7 h-7 rounded-full border-2 border-[#B08D57]/30 border-t-[#B08D57] animate-spin mb-3" />
     <span className="text-[11px] font-mono-data text-[#8292A6] uppercase tracking-wider">
-      Hydrating Sovereign Data Engine...
+      Loading Institutional Macro Engine...
     </span>
   </div>
 );

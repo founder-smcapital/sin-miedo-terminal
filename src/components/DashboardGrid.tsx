@@ -25,7 +25,7 @@ const WidgetFallback: React.FC<{ label: string; minHeight?: string }> = ({ label
   >
     <div className="w-5 h-5 rounded-full border-2 border-[#B08D57]/30 border-t-[#B08D57] animate-spin mb-2" />
     <span className="text-[10px] font-mono-data text-[#BAC7D5]/70 tracking-widest uppercase">
-      Hydrating {label}...
+      Loading {label}...
     </span>
   </div>
 );

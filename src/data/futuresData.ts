@@ -1176,7 +1176,7 @@ export const INITIAL_FUTURES_DATA: Record<string, FuturesContract> = {
     },
     tradePlan: {
       setup: "Yen carry stabilization and Tokyo export conglomerate re-accumulation.",
-      trigger: "Holding above 66,000.00 VWAP as USD/JPY defends key levels.",
+      trigger: "Holding above 66,000.00 session VWAP as USD/JPY consolidates below 157.20 MoF intervention ceiling with positive Tokyo delta.",
       target1: "66,680.00 (+1σ Expansion Band)",
       target2: "67,120.00 (Tokyo High Liquidity Sweep)",
       invalidation: "Breakdown below 65,200.00 session low on BoJ hawkish signals."
