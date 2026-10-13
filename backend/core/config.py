@@ -22,7 +22,7 @@ try:
         API_V1_PREFIX: str = "/api/v1"
         ENVIRONMENT: str = Field(default="production", env="ENVIRONMENT")
         DEBUG: bool = Field(default=False, env="DEBUG")
-        PORT: int = Field(default=8000, env="PORT")
+        PORT: int = Field(default=8001, env="PORT")
         HOST: str = Field(default="0.0.0.0", env="HOST")
 
         # OpenBB Platform SDK Configuration
@@ -65,7 +65,7 @@ except ImportError:
         API_V1_PREFIX: str = "/api/v1"
         ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")
         DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-        PORT: int = int(os.getenv("PORT", "8000"))
+        PORT: int = int(os.getenv("PORT", "8001"))
         HOST: str = os.getenv("HOST", "0.0.0.0")
 
         OPENBB_PAT: str = os.getenv("OPENBB_PAT", "")

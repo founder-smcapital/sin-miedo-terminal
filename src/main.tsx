@@ -3,6 +3,38 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Gracefully suppress AbortErrors (browser native events when in-flight fetches, streams, or timers are aborted on navigation/unmount)
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (event) => {
+    if (
+      event.reason?.name === "AbortError" ||
+      event.reason?.code === 20 ||
+      (typeof event.reason?.message === "string" && (
+        event.reason.message.includes("aborted") ||
+        event.reason.message.includes("AbortError") ||
+        event.reason.message.includes("The user aborted a request")
+      ))
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation?.();
+    }
+  });
+
+  window.addEventListener("error", (event) => {
+    if (
+      event.error?.name === "AbortError" ||
+      (typeof event.message === "string" && (
+        event.message.includes("AbortError") ||
+        event.message.includes("aborted") ||
+        event.message.includes("The user aborted a request")
+      ))
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation?.();
+    }
+  });
+}
+
 interface Props {
   children: ReactNode;
 }
