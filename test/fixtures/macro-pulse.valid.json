@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "source": "OpenMarket",
+  "symbol": "SPY",
+  "eventType": "pulse",
+  "ts": 1728881112000,
+  "price": 602.35,
+  "changePct": 0.82,
+  "changeAbs": 4.92,
+  "status": "ok",
+  "metadata": {
+    "exchange": "NASDAQ",
+    "venue": "XNAS",
+    "ingestTs": 1728881112000,
+    "feed": "finnhub",
+    "sequenceId": 4839201
+  }
+}
