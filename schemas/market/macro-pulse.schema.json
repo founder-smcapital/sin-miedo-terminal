@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/founder-smcapital/sin-miedo-terminal/schemas/market/macro-pulse.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "symbol",
+    "eventType",
+    "ts",
+    "price",
+    "changePct",
+    "changeAbs",
+    "status",
+    "metadata"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 2
+    },
+    "symbol": {
+      "type": "string",
+      "minLength": 1
+    },
+    "eventType": {
+      "type": "string",
+      "enum": ["snapshot", "pulse", "delta"]
+    },
+    "ts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "price": {
+      "type": "number"
+    },
+    "changePct": {
+      "type": "number"
+    },
+    "changeAbs": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "warning", "error"]
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exchange", "venue", "ingestTs", "feed", "sequenceId"],
+      "properties": {
+        "exchange": { "type": "string", "minLength": 1 },
+        "venue": { "type": "string", "minLength": 1 },
+        "ingestTs": { "type": "integer", "minimum": 0 },
+        "feed": { "type": "string", "minLength": 1 },
+        "sequenceId": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
