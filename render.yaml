@@ -1,0 +1,28 @@
+# Render Blueprint Configuration
+# Deploys Sin Miedo Capital Institutional Market Data Backend
+services:
+  - type: web
+    name: sinmiedo-quant-backend
+    runtime: python
+    region: oregon
+    plan: starter
+    branch: main
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: SEC_USER_AGENT
+        value: "SinMiedoCapital-QuantTerminal/2.4 (admin@sinmiedocapital.com)"
+      - key: FRED_API_KEY
+        sync: false
+      - key: OPENBB_PAT
+        sync: false
+      - key: CACHE_TTL_SECONDS
+        value: "300"
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: "15.0"

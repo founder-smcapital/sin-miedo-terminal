@@ -4797,6 +4797,30 @@ function startMasterBroadcaster() {
 
 startMasterBroadcaster();
 
+// API: Institutional Python FastAPI Reverse-Proxy Bridge (OpenBB, FRED, SEC EDGAR, CFTC, FINRA)
+app.use("/api/v1", async (req, res, next) => {
+  const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
+  const targetUrl = `${pythonBackendUrl.replace(/\/$/, "")}/api/v1${req.url}`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const backendRes = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = await backendRes.json();
+    return res.status(backendRes.status).json(data);
+  } catch (_err) {
+    // If local python service is not bound on port 8000 or timed out, pass to next handlers
+    return next();
+  }
+});
+
 // API: Health Check
 app.get("/api/health", (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=1, stale-while-revalidate=2");
