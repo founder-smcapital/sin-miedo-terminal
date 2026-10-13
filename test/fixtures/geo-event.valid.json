@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "source": "GDELT",
+  "id": "geo-20261013-0001",
+  "headline": "US and Iranian naval units exchange warning shots near Hormuz",
+  "summary": "Regional naval forces report warning shots after a rapid escalation in shipping lane security measures near the Strait of Hormuz.",
+  "category": "US-Iran Kinetic",
+  "sentiment": "Escalatory Kinetic",
+  "rawTimestamp": 1728881115000,
+  "sourceTime": "2026-10-13T12:05:00Z",
+  "confidenceScore": 88,
+  "impactScore": 91,
+  "location": {
+    "country": "Iran",
+    "region": "Hormuz Strait"
+  },
+  "affectedAssets": {
+    "brentImpact": "+2.90/bbl",
+    "goldImpact": "+35/oz",
+    "tankerRateImpact": "+220 bps"
+  },
+  "isLiveNew": true
+}
