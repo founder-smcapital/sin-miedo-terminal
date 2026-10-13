@@ -355,7 +355,7 @@ Sent via Sin Miedo Capital Intelligence Terminal`;
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Alex Morgan (Prop Trader)"
+                    placeholder="e.g. Alex Morgan (Portfolio Manager)"
                     className="w-full bg-[#0B1019] border border-[#2B3545] focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] rounded-lg px-3.5 py-2.5 text-xs text-[#EDE9DE] placeholder-[#5A687D] outline-none transition-all"
                   />
                 </div>

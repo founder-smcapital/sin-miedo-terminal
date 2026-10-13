@@ -245,49 +245,49 @@ Bitcoin exhibits structural strength, co-trending with Gold ($4,408+/oz) on sove
               onSelectSetup={(setup) => setSelectedSetup(setup)}
             />
 
-            {/* Institutional Trade Management Rules for Prop Traders */}
-            <div className="p-4 space-y-3 border-t border-[#B08D57]/20 bg-[#0F1724]">
+            {/* Institutional Trade Management Rules for Allocator Desks */}
+            <div className="p-4 space-y-3 border-t border-[#1E293B] bg-[#0E1624]">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-[#B08D57]" />
                 <h4 className="text-xs font-mono-data font-bold text-[#EDE9DE] uppercase tracking-wider">
-                  Prop Firm Account Execution Playbook (MyFundedFutures · Tradovate / TradingView)
+                  Institutional Capital Management Playbook (Macro Desks &amp; Prime Execution)
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono-data">
-                <div className="p-2.5 bg-black/40 border border-white/5 rounded-lg space-y-1">
+                <div className="p-2.5 bg-[#080E18] border border-[#1E293B] rounded-sm space-y-1">
                   <span className="text-[#B08D57] font-bold block text-[10px] uppercase">
                     1. Micro Sizing Discipline
                   </span>
                   <p className="text-[#BAC7D5] leading-relaxed">
-                    Always trade <strong>Micro E-mini (MES)</strong> or <strong>Micro Nasdaq (MNQ)</strong> during evaluation phases. 1 full ES contract = 10 MES contracts. Using 1-2 MES limits per-trade dollar risk to $100–$200, protecting the trailing drawdown buffer.
+                    Utilize <strong>Micro E-mini (MES)</strong> or <strong>Micro Nasdaq (MNQ)</strong> to calibrate position scale. 1 full ES contract = 10 MES contracts. Using micro futures enables granular scaling and precise portfolio volatility containment.
                   </p>
                 </div>
 
-                <div className="p-2.5 bg-black/40 border border-white/5 rounded-lg space-y-1">
+                <div className="p-2.5 bg-[#080E18] border border-[#1E293B] rounded-sm space-y-1">
                   <span className="text-[#B08D57] font-bold block text-[10px] uppercase">
                     2. Mandatory Bracket Orders
                   </span>
                   <p className="text-[#BAC7D5] leading-relaxed">
-                    Set up your <strong>OCO Bracket</strong> in Tradovate / TradingView before clicking buy/sell. A trade should never exist without an attached stop-loss on the book.
+                    Establish your <strong>OCO Bracket</strong> on order routing before transmission. An algorithmic execution should never enter the book without an attached stop-loss.
                   </p>
                 </div>
 
-                <div className="p-2.5 bg-black/40 border border-white/5 rounded-lg space-y-1">
+                <div className="p-2.5 bg-[#080E18] border border-[#1E293B] rounded-sm space-y-1">
                   <span className="text-[#B08D57] font-bold block text-[10px] uppercase">
                     3. Premarket DXY Filter
                   </span>
                   <p className="text-[#BAC7D5] leading-relaxed">
-                    Check the <strong>Dollar Index (DXY)</strong> chart before the 9:30 AM ET open. If DXY is holding above 102.20, expect heavy resistance on MCL Crude and multiple compression drag on tech (MNQ).
+                    Monitor the <strong>Dollar Index (DXY)</strong> trajectory before the cash session open. If DXY holds above 102.20, expect structural resistance on energy contracts (MCL) and valuation compression across duration assets (MNQ).
                   </p>
                 </div>
 
-                <div className="p-2.5 bg-black/40 border border-white/5 rounded-lg space-y-1">
+                <div className="p-2.5 bg-[#080E18] border border-[#1E293B] rounded-sm space-y-1">
                   <span className="text-[#B08D57] font-bold block text-[10px] uppercase">
-                    4. Trailing Drawdown Preservation
+                    4. Capital Preservation &amp; Breakeven
                   </span>
                   <p className="text-[#BAC7D5] leading-relaxed">
-                    Once in profit of $300+ on MES, immediately move stop-loss to <strong>breakeven + 2 ticks</strong>. Do not let winning runners retrace into negative territory that pulls up your trailing high-water mark.
+                    Once in profit on thematic swings, systematically trail stops to <strong>breakeven + 2 ticks</strong>. Do not permit favorable runs to retrace into unmanaged risk territory.
                   </p>
                 </div>
               </div>

@@ -135,28 +135,28 @@ export const PulseFeedView: React.FC<PulseFeedViewProps> = ({
   return (
     <div id="pulse-feed-view-container" className="space-y-5 animate-in fade-in">
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#B08D57]/20">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1E293B]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-[#A6291C]/25 border border-[#A6291C]/60 flex items-center justify-center relative shadow-[0_0_15px_rgba(166,41,28,0.2)]">
-            <Radio className="w-5 h-5 text-[#FF8585]" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FF4545] rounded-full border border-black/50" />
+          <div className="w-9 h-9 rounded-sm bg-[#0E1624] border border-[#1E293B] flex items-center justify-center relative">
+            <Radio className="w-4 h-4 text-[#FF8585]" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#FF4545] rounded-none border border-black/50" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#B08D57]" style={{ fontFamily: "Georgia, serif" }}>
-                SMC Macro Pulse & Flash Signals
+              <h1 className="font-swiss-display text-2xl sm:text-3xl font-bold text-[#FBF8F1] tracking-tight">
+                SMC Macro Pulse &amp; Flash Signals
               </h1>
-              <span className="text-[9px] font-mono-data font-bold bg-[#A6291C] text-[#EDE9DE] px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="text-[9px] font-mono-data font-bold bg-[#A6291C] text-[#EDE9DE] px-2 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-none bg-white" />
                 Live Sub-Second Stream
               </span>
-              <span className="text-[9px] font-mono-data font-bold bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm" title="Zero week-old news • Strict 24h TTL gate active">
+              <span className="text-[9px] font-mono-data font-bold bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-sm flex items-center gap-1" title="Zero week-old news • Strict 24h TTL gate active">
                 <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                 Strict 24h Freshness Gate
               </span>
             </div>
             <p className="text-[10px] font-mono-data text-[#8292A6] mt-0.5">
-              ACTIVE GEOPOLITICAL KINETIC STRIKES, CHOKEPOINT INTERDICTIONS & INSTITUTIONAL FLOWS
+              ACTIVE GEOPOLITICAL KINETIC STRIKES, CHOKEPOINT INTERDICTIONS &amp; INSTITUTIONAL FLOWS
             </p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export const PulseFeedView: React.FC<PulseFeedViewProps> = ({
           <button
             onClick={handleSimulatePipelineShutdownAlert}
             disabled={isInjecting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#450A0A] text-[#FCA5A5] hover:bg-[#5C0D0D] border border-[#EF4444]/60 text-xs font-mono-data font-bold transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-[#220707] text-[#FCA5A5] hover:bg-[#350A0A] border border-[#EF4444]/50 text-xs font-mono-data font-semibold transition-all cursor-pointer active:scale-95"
             title="Inject Saudi Petroline shutdown alert"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-[#EF4444]" />
@@ -176,16 +176,16 @@ export const PulseFeedView: React.FC<PulseFeedViewProps> = ({
           <button
             onClick={handleSimulateBreakingStrikeAlert}
             disabled={isInjecting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#A6291C]/30 text-[#FFA4A4] hover:bg-[#A6291C]/50 border border-[#A6291C]/60 text-xs font-mono-data font-bold transition-all shadow-[0_0_10px_rgba(166,41,28,0.15)]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-[#220707] text-[#FFA4A4] hover:bg-[#350A0A] border border-[#A6291C]/50 text-xs font-mono-data font-semibold transition-all cursor-pointer active:scale-95"
             title="Inject simulated breaking maritime strike telemetry"
           >
-            <Flame className="w-3.5 h-3.5 text-[#FF8585] animate-pulse" />
+            <Flame className="w-3.5 h-3.5 text-[#FF8585]" />
             {isInjecting ? "Broadcasting..." : "Simulate Strike"}
           </button>
 
           <button
             onClick={onRefresh}
-            className="p-2 rounded bg-black/40 text-[#EDE9DE] hover:text-[#B08D57] border border-[#B08D57]/25 transition-colors"
+            className="p-1.5 rounded-sm bg-[#0E1624] text-[#EDE9DE] hover:text-[#B08D57] border border-[#1E293B] hover:border-[#B08D57] transition-colors cursor-pointer"
             title="Force Instant Telemetry Resync"
           >
             <RefreshCw className="w-4 h-4" />

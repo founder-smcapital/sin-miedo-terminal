@@ -2057,7 +2057,7 @@ export const SystemsView: React.FC<SystemsViewProps> = ({
                     Account Capital Base (NAV)
                   </h4>
                   <p className="text-[11px] font-mono-data text-[#8292A6]">
-                    Adjustable capital base for retail accounts, prop challenges, or institutional desks.
+                    Adjustable capital base for individual accounts, allocator funds, or institutional desks.
                   </p>
                 </div>
               </div>
@@ -2137,8 +2137,8 @@ export const SystemsView: React.FC<SystemsViewProps> = ({
                 {[
                   { label: `${curSym}5K`, sub: "Retail Micro", val: 5000 },
                   { label: `${curSym}10K`, sub: "Retail Starter", val: 10000 },
-                  { label: `${curSym}25K`, sub: "Prop Challenge", val: 25000 },
-                  { label: `${curSym}50K`, sub: "Funded Trader", val: 50000 },
+                  { label: `${curSym}25K`, sub: "Core Allocator", val: 25000 },
+                  { label: `${curSym}50K`, sub: "Macro Account", val: 50000 },
                   { label: `${curSym}100K`, sub: "HNW Semi-Pro", val: 100000 },
                   { label: `${curSym}250K`, sub: "Family Office", val: 250000 },
                   { label: `${curSym}500K`, sub: "Institutional Desk", val: 500000 },
@@ -2304,7 +2304,7 @@ export const SystemsView: React.FC<SystemsViewProps> = ({
                   ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
                   : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
               }`}>
-                {accountCapital < 50000 ? "Retail Micro/Mini Tier" : accountCapital < 250000 ? "Prop / Mid Tier" : "Institutional Full Tier"}
+                {accountCapital < 50000 ? "Retail Micro/Mini Tier" : accountCapital < 250000 ? "Core Allocator Tier" : "Institutional Full Tier"}
               </span>
             </div>
 

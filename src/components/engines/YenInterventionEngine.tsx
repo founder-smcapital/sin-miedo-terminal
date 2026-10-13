@@ -44,26 +44,26 @@ export const YenInterventionEngine: React.FC<YenInterventionEngineProps> = ({
       className={
         isExpanded
           ? "space-y-6 text-[#EDE9DE]"
-          : "bg-[#101622] border border-[#B08D57]/35 hover:border-[#B08D57]/55 rounded-xl p-4 sm:p-6 transition-all shadow-2xl flex flex-col justify-between relative group"
+          : "bg-[#0E1624] border border-[#1E293B] hover:border-[#B08D57]/40 rounded-sm p-3.5 sm:p-5 transition-all shadow-none flex flex-col justify-between relative group"
       }
     >
       {/* Subtle top brass highlight */}
       {!isExpanded && (
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/40 to-transparent pointer-events-none" />
       )}
 
       {/* Top Header & Sub-Tabs */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#B08D57]/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1E293B]">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <h3 className="font-serif italic text-xl sm:text-2xl font-bold tracking-tight text-[#FBF8F1]" style={{ fontFamily: "Georgia, 'Newsreader', serif" }}>
               US-Yen Intervention Dynamics
             </h3>
-            <span className={`text-[9px] font-mono-data font-bold uppercase tracking-wider px-2.5 py-0.5 rounded shadow-sm border shrink-0 whitespace-nowrap ${
+            <span className={`text-[9px] font-mono-data font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm border shrink-0 whitespace-nowrap ${
               currentOdds >= 70
-                ? "bg-[#A6291C]/30 text-[#FFA4A4] border-[#A6291C]/60"
+                ? "bg-[#A6291C]/20 text-[#FFA4A4] border-[#A6291C]/50"
                 : currentOdds >= 40
-                ? "bg-[#B08D57]/30 text-[#E5C794] border-[#B08D57]/50"
+                ? "bg-[#B08D57]/20 text-[#E5C794] border-[#B08D57]/40"
                 : "bg-[#10B981]/20 text-[#34D399] border-[#10B981]/40"
             }`}>
               {data.defcon}
@@ -72,14 +72,14 @@ export const YenInterventionEngine: React.FC<YenInterventionEngineProps> = ({
 
           {/* Sub Tab Switcher & Fullscreen Button */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-black/70 p-1 rounded-lg border border-[#B08D57]/30 text-[10px] font-mono-data shadow-inner overflow-x-auto no-scrollbar max-w-full">
+            <div className="flex items-center bg-[#080E18] p-0.5 rounded-sm border border-[#1E293B] text-[10px] font-mono-data overflow-x-auto no-scrollbar max-w-full">
               {(["Trigger Zones", "Order Book Depth", "Probability", "Yield Spread", "Past Logs"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveSubTab(tab)}
-                  className={`px-2.5 py-1 rounded transition-all uppercase font-medium shrink-0 whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-sm transition-all uppercase font-medium shrink-0 whitespace-nowrap ${
                     activeSubTab === tab
-                      ? "bg-[#B08D57] text-[#0A111C] font-bold shadow-md scale-105"
+                      ? "bg-[#B08D57] text-[#0A111C] font-bold"
                       : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
                   }`}
                 >

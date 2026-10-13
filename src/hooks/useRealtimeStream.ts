@@ -126,9 +126,13 @@ export interface PolygonQuote {
 export interface PolygonValidationData {
   status: "connected" | "unconfigured" | "error";
   keyConfigured: boolean;
+  isUserKey?: boolean;
+  tier?: "free_aggregates" | "paid_realtime";
+  liveNbboEntitled?: boolean;
   lastSync: number | null;
   latencyMs: number;
   marketStatus: string | null;
+  serverTime?: string | null;
   quotes: {
     spy: PolygonQuote | null;
     qqq: PolygonQuote | null;
@@ -161,6 +165,8 @@ export interface StreamGatewayInfo {
   polygonData: PolygonValidationData | null;
   isPolygonVerifying: boolean;
   triggerPolygonVerify: () => Promise<void>;
+  configurePolygonKey: (key: string) => Promise<{ success: boolean; message: string; tier?: string; liveNbboEntitled?: boolean }>;
+  resetPolygonKey: () => Promise<{ success: boolean; message: string }>;
 }
 
 export function useRealtimeStream(
@@ -259,6 +265,56 @@ export function useRealtimeStream(
       }
     } catch (e) {
       console.warn("Manual Polygon verify failed:", e);
+    } finally {
+      setIsPolygonVerifying(false);
+    }
+  }, []);
+
+  const configurePolygonKey = useCallback(async (key: string) => {
+    setIsPolygonVerifying(true);
+    try {
+      const res = await fetch("/api/polygon/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: key })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Refresh polygon status
+        const statRes = await fetch("/api/polygon/status");
+        if (statRes.ok) {
+          const statData = await statRes.json();
+          setPolygonData(statData);
+        }
+        return { 
+          success: true, 
+          message: data.message, 
+          tier: data.tier, 
+          liveNbboEntitled: data.liveNbboEntitled 
+        };
+      } else {
+        return { success: false, message: data.message || "Failed to configure Polygon key" };
+      }
+    } catch (err: any) {
+      return { success: false, message: err?.message || "Network error while validating key" };
+    } finally {
+      setIsPolygonVerifying(false);
+    }
+  }, []);
+
+  const resetPolygonKey = useCallback(async () => {
+    setIsPolygonVerifying(true);
+    try {
+      const res = await fetch("/api/polygon/reset-key", { method: "POST" });
+      const data = await res.json();
+      const statRes = await fetch("/api/polygon/status");
+      if (statRes.ok) {
+        const statData = await statRes.json();
+        setPolygonData(statData);
+      }
+      return { success: true, message: data.message || "Reverted to default Polygon feed" };
+    } catch (err: any) {
+      return { success: false, message: err?.message || "Failed to reset Polygon key" };
     } finally {
       setIsPolygonVerifying(false);
     }
@@ -439,6 +495,8 @@ export function useRealtimeStream(
       polygonData,
       isPolygonVerifying,
       triggerPolygonVerify,
+      configurePolygonKey,
+      resetPolygonKey,
       toggleMode,
       reconnect,
     }),
@@ -460,6 +518,8 @@ export function useRealtimeStream(
       polygonData,
       isPolygonVerifying,
       triggerPolygonVerify,
+      configurePolygonKey,
+      resetPolygonKey,
       toggleMode,
       reconnect,
     ]

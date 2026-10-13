@@ -291,7 +291,7 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
         bias: "BULLISH BIAS",
         biasScore: `+${ibexScoreVal} / 100`,
         biasBadgeClass: "bg-[#10B981]/25 text-[#34D399] border-[#10B981]/50",
-        subtitle: "COREFUNDED PROP EXECUTION BIAS & BME MEFF ORDER FLOW",
+        subtitle: "INSTITUTIONAL CORE EXECUTION BIAS & BME MEFF ORDER FLOW",
         volumeDeltaLots: `+${ibexDeltaLots.toLocaleString()} lots`,
         buyerPercent: ibexBuyerPct,
         sellerPercent: ibexSellerPct,
@@ -934,22 +934,22 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
       className={
         isExpanded
           ? "space-y-6 text-[#EDE9DE]"
-          : "bg-[#101622] border border-[#B08D57]/35 hover:border-[#B08D57]/55 rounded-xl p-4 sm:p-6 transition-all shadow-2xl flex flex-col justify-between relative group overflow-hidden"
+          : "bg-[#0E1624] border border-[#1E293B] hover:border-[#B08D57]/40 rounded-sm p-3.5 sm:p-5 transition-all shadow-none flex flex-col justify-between relative group overflow-hidden"
       }
     >
       {/* Subtle top brass highlight */}
       {!isExpanded && (
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/40 to-transparent pointer-events-none" />
       )}
 
       <div>
         {/* GLOBAL EQUITIES & CRYPTO SELECTOR STRIP */}
-        <div className="mb-4 pb-3 border-b border-[#B08D57]/20">
+        <div className="mb-3.5 pb-2.5 border-b border-[#1E293B]">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono-data uppercase tracking-wider text-[#8292A6] flex items-center gap-1.5 font-bold">
                 <Globe className="w-3.5 h-3.5 text-[#B08D57]" />
-                <span>GLOBAL BENCHMARKS & $BTC PROP EXECUTION SYSTEMS</span>
+                <span>GLOBAL BENCHMARKS &amp; $BTC PROP EXECUTION SYSTEMS</span>
               </span>
               <span className="text-[9px] font-mono-data text-[#B08D57] hidden sm:inline">
                 24H BENCHMARK SYNC
@@ -962,7 +962,7 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
                 onClick={onExpandToggle}
                 title={isExpanded ? "Collapse View" : "Expand Fullscreen"}
                 aria-label={isExpanded ? "Collapse View" : "Expand Fullscreen"}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/70 border border-[#B08D57]/35 hover:border-[#B08D57] text-[#BAC7D5] hover:text-[#E5C794] transition-all shrink-0 cursor-pointer shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[#080E18] border border-[#1E293B] hover:border-[#B08D57] text-[#BAC7D5] hover:text-[#E5C794] transition-all shrink-0 cursor-pointer active:scale-95"
               >
                 {isExpanded ? (
                   <>
@@ -980,7 +980,7 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
           </div>
 
           {/* Quick-Select Equity & $BTC Pills */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
             {equityList.map((eqKey) => {
               const eq = equitiesConfig[eqKey];
               const isSelected = selectedEquityKey === eqKey;
@@ -989,10 +989,10 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
                   key={eqKey}
                   id={`equity-select-${eqKey}`}
                   onClick={() => setSelectedEquityKey(eqKey)}
-                  className={`p-2 rounded-lg border text-left transition-all flex flex-col justify-between font-mono-data cursor-pointer ${
+                  className={`p-2 rounded-sm border text-left transition-all flex flex-col justify-between font-mono-data cursor-pointer ${
                     isSelected
-                      ? "bg-[#1B2233] border-[#B08D57] text-[#FBF8F1] shadow-[0_0_15px_rgba(176,141,87,0.25)] ring-1 ring-[#B08D57]"
-                      : "bg-black/40 border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#B08D57]/40 hover:bg-black/60"
+                      ? "bg-[#141E2F] border-[#B08D57] text-[#FBF8F1]"
+                      : "bg-[#080E18] border-[#1E293B] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#B08D57]/40"
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px] gap-1">
@@ -1019,29 +1019,30 @@ export const IbexPropEngine: React.FC<IbexPropEngineProps> = ({
         </div>
 
         {/* Tri-Regional Divergence Pulse Banner */}
-        <div className="mb-3 p-2 sm:p-2.5 rounded-lg bg-black/60 border border-[#B08D57]/30 flex flex-wrap items-center justify-between gap-2 text-xs font-mono-data shadow-sm">
+        <div className="mb-3 p-2 sm:p-2.5 rounded-sm bg-[#080E18] border border-[#1E293B] flex flex-wrap items-center justify-between gap-2 text-xs font-mono-data">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="flex items-center gap-1 text-[#E5C794] font-bold text-[10.5px]">
               <Zap className="w-3.5 h-3.5 text-[#B08D57]" />
-              <span>TRI-REGIONAL DIVERGENCE ACTIVE:</span>
+              <span>TRI-REGIONAL DIVERGENCE:</span>
             </span>
             <span className="text-emerald-400 font-bold text-[10.5px] flex items-center gap-1">
-              <span>ASIA GREEN 🟢</span>
+              <span>ASIA GREEN</span>
               <span className="text-[9.5px] text-[#A7F3D0]">(KOSPI +0.83%, NIKKEI +0.74%, HSI +1.36%)</span>
             </span>
             <span className="text-[#38BDF8] font-bold text-[10.5px] flex items-center gap-1">
-              <span>US RESILIENT 🔷</span>
-              <span className="text-[9.5px] text-[#BAE6FD]">(S&P +0.18%, NQ +0.42%, DOW +0.12%)</span>
+              <span>US RESILIENT</span>
+              <span className="text-[9.5px] text-[#BAE6FD]">(S&amp;P +0.18%, NQ +0.42%)</span>
             </span>
             <span className="text-[#8292A6] text-[10px]">vs</span>
             <span className="text-rose-400 font-bold text-[10.5px] flex items-center gap-1">
-              <span>EU DOWN 🔴</span>
-              <span className="text-[9.5px] text-[#FECDD3]">(DAX -0.34%, IBEX -0.28%, STOXX -0.38%)</span>
+              <span>EU DOWN</span>
+              <span className="text-[9.5px] text-[#FECDD3]">(DAX -0.34%, IBEX -0.28%)</span>
             </span>
           </div>
+
           <button
             onClick={() => setActiveSubTab("Correlation Matrix")}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#B08D57]/20 hover:bg-[#B08D57]/35 text-[#E5C794] border border-[#B08D57]/45 text-[10px] font-bold transition-all cursor-pointer shadow-sm active:scale-95 ml-auto"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-[#111A28] hover:bg-[#182336] text-[#E5C794] border border-[#1E293B] hover:border-[#B08D57] text-[10px] font-bold transition-all cursor-pointer active:scale-95 ml-auto"
           >
             <span>Open Tri-Regional Matrix</span>
             <ArrowUpRight className="w-3 h-3 text-[#B08D57]" />

@@ -26,10 +26,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onLoginSuccess,
 }) => {
-  const [email, setEmail] = useState("tradeinmotions@gmail.com");
-  const [password, setPassword] = useState("SinMiedo2026!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [tier, setTier] = useState<ClearanceTier>("Founding Member");
-  const [passcode, setPasscode] = useState("SMC-FOUNDING-2026");
+  const [passcode, setPasscode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -38,7 +38,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleSelectTier = (selectedTier: ClearanceTier) => {
     setTier(selectedTier);
-    setPasscode(TIER_PASSCODES[selectedTier] || "SMC-FOUNDING-2026");
   };
 
   const triggerConfetti = () => {
@@ -333,6 +332,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
                 className="w-full bg-black/50 border border-[#B08D57]/20 focus:border-[#B08D57] rounded py-2 pl-9 pr-3 text-xs text-[#EDE9DE] outline-none font-mono-data transition-colors"
               />
             </div>
@@ -351,9 +351,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <input
                 id="auth-passcode-input"
                 type="text"
-                required
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
+                placeholder="e.g. SMC-FOUNDING-2026"
                 className="w-full bg-black/50 border border-[#B08D57]/20 focus:border-[#B08D57] rounded py-2 pl-9 pr-3 text-xs text-[#EDE9DE] outline-none font-mono-data transition-colors tracking-wider"
               />
             </div>

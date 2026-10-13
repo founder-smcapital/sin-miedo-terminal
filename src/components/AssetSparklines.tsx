@@ -152,7 +152,7 @@ export const AssetSparklines: React.FC<AssetSparklinesProps> = ({ macroData }) =
   const goldPrice = goldTicker?.price ?? 4408.90;
   const silverPrice = silverTicker?.price ?? 64.10;
   const yenPrice = yenTicker?.price ?? macroData.engines.yenIntervention.spot ?? 156.25;
-  const brentPrice = brentTicker?.price ?? 100.04;
+  const brentPrice = brentTicker?.price ?? 76.85;
   const ibexPrice = ibexTicker?.price ?? macroData.engines.ibexBias.level ?? 19834.00;
   const btcPrice = btcTicker?.price ?? 84450.00;
   const sp500Price = sp500Ticker?.price ?? 7704.13;
@@ -187,21 +187,22 @@ export const AssetSparklines: React.FC<AssetSparklinesProps> = ({ macroData }) =
     // ----------------------------------------------------
     // 1. COMMODITIES, EQUITIES & DIGITAL ASSETS (RISK-ON SUITE)
     // ----------------------------------------------------
-    // High-fidelity Brent 24h trajectory mirroring real session: $103.45 high -> dip test of $100 psychological support
+    // Authentic Brent 24h trajectory mirroring real market cash benchmark
+    const brentRatio = brentPrice / 76.85;
     const brentHistory = (brentTicker?.history24h && brentTicker.history24h.length >= 6)
       ? brentTicker.history24h
       : [
-          { hour: "00:00", price: 102.80, formatted: "$102.80" },
-          { hour: "02:00", price: 102.95, formatted: "$102.95" },
-          { hour: "04:00", price: 103.10, formatted: "$103.10" },
-          { hour: "06:00", price: 103.35, formatted: "$103.35" },
-          { hour: "08:00", price: 103.45, formatted: "$103.45" },
-          { hour: "10:00", price: 103.10, formatted: "$103.10" },
-          { hour: "12:00", price: 102.40, formatted: "$102.40" },
-          { hour: "14:00", price: 101.85, formatted: "$101.85" },
-          { hour: "16:00", price: 101.10, formatted: "$101.10" },
-          { hour: "18:00", price: 100.55, formatted: "$100.55" },
-          { hour: "20:00", price: 100.20, formatted: "$100.20" },
+          { hour: "00:00", price: Number((76.53 * brentRatio).toFixed(2)), formatted: `$${(76.53 * brentRatio).toFixed(2)}` },
+          { hour: "02:00", price: Number((76.77 * brentRatio).toFixed(2)), formatted: `$${(76.77 * brentRatio).toFixed(2)}` },
+          { hour: "04:00", price: Number((76.98 * brentRatio).toFixed(2)), formatted: `$${(76.98 * brentRatio).toFixed(2)}` },
+          { hour: "06:00", price: Number((77.15 * brentRatio).toFixed(2)), formatted: `$${(77.15 * brentRatio).toFixed(2)}` },
+          { hour: "08:00", price: Number((77.38 * brentRatio).toFixed(2)), formatted: `$${(77.38 * brentRatio).toFixed(2)}` },
+          { hour: "10:00", price: Number((77.20 * brentRatio).toFixed(2)), formatted: `$${(77.20 * brentRatio).toFixed(2)}` },
+          { hour: "12:00", price: Number((77.05 * brentRatio).toFixed(2)), formatted: `$${(77.05 * brentRatio).toFixed(2)}` },
+          { hour: "14:00", price: Number((76.85 * brentRatio).toFixed(2)), formatted: `$${(76.85 * brentRatio).toFixed(2)}` },
+          { hour: "16:00", price: Number((76.65 * brentRatio).toFixed(2)), formatted: `$${(76.65 * brentRatio).toFixed(2)}` },
+          { hour: "18:00", price: Number((76.45 * brentRatio).toFixed(2)), formatted: `$${(76.45 * brentRatio).toFixed(2)}` },
+          { hour: "20:00", price: Number((76.60 * brentRatio).toFixed(2)), formatted: `$${(76.60 * brentRatio).toFixed(2)}` },
           { hour: "LIVE", price: brentPrice, formatted: `$${brentPrice.toFixed(2)}` }
         ];
 
@@ -792,7 +793,7 @@ export const AssetSparklines: React.FC<AssetSparklinesProps> = ({ macroData }) =
         isPositive: (brentTicker?.change ?? -2.85) >= 0,
         high24h: `$${Math.max(...brentHistory.map(p => p.price)).toFixed(2)}`,
         low24h: `$${Math.min(...brentHistory.map(p => p.price)).toFixed(2)}`,
-        momentumTag: brentPrice <= 100.5 ? "TESTING $100 SUPPORT" : "WAR RISK ELEVATED",
+        momentumTag: brentPrice >= 85 ? "SUPPLY PREMIUM" : "STABILIZED CASH SPOT",
         macroRole: `Geopolitical stagflation & Hormuz chokepoint barometer ($${brentPrice.toFixed(2)} Spot)`,
         history24h: brentHistory
       },

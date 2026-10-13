@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Activity,
   Wifi,
@@ -11,7 +11,11 @@ import {
   Layers,
   ArrowDownUp,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Key,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { StreamGatewayInfo } from "../hooks/useRealtimeStream";
 
@@ -30,6 +34,11 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
   onToggleMode,
   onReconnect,
 }) => {
+  const [polygonKeyInput, setPolygonKeyInput] = useState("");
+  const [isConfiguringPolygon, setIsConfiguringPolygon] = useState(false);
+  const [polygonFeedback, setPolygonFeedback] = useState<{ success: boolean; text: string } | null>(null);
+  const [showPolygonConfig, setShowPolygonConfig] = useState(false);
+
   if (!isOpen) return null;
 
   const {
@@ -440,16 +449,26 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
 
         {/* Polygon.io CTA / UTP Consolidated Tape & Official VWAP */}
         <div className="bg-black/60 border border-[#B08D57]/30 rounded-lg p-3.5 space-y-3 relative overflow-hidden">
-          <div className="flex items-center justify-between pb-2 border-b border-[#B08D57]/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-[#B08D57]/20 gap-2">
             <div className="flex items-center gap-2">
               <span className="p-1 rounded bg-[#B08D57]/20 text-[#E5C794] border border-[#B08D57]/30">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
               </span>
               <div>
-                <span className="text-[11px] font-bold text-[#FBF8F1] tracking-wider uppercase font-sans flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-[#FBF8F1] tracking-wider uppercase font-sans flex flex-wrap items-center gap-1.5">
                   <span>Polygon.io CTA/UTP Consolidated Tape</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30 font-mono font-normal">
+                  <span className="text-[8.5px] px-1.5 py-0.2 rounded bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30 font-mono font-normal">
                     ACTIVE · SIP TAPE
+                  </span>
+                  <span className={`text-[8.5px] px-1.5 py-0.2 rounded font-mono font-normal border ${
+                    (streamInfo.polygonData?.marketStatus === "open") 
+                      ? "bg-[#10B981]/15 text-[#34D399] border-[#10B981]/30" 
+                      : "bg-[#F59E0B]/15 text-[#FBBF24] border-[#F59E0B]/30"
+                  }`}>
+                    NYSE/NASDAQ: {(streamInfo.polygonData?.marketStatus || "open").toUpperCase()}
+                  </span>
+                  <span className="text-[8.5px] px-1.5 py-0.2 rounded bg-white/5 text-[#BAC7D5] border border-white/10 font-mono font-normal">
+                    {streamInfo.polygonData?.isUserKey ? "CUSTOM ACCOUNT" : "SYSTEM DEFAULT FEED"}
                   </span>
                 </span>
                 <span className="text-[9px] text-[#8292A6] block">
@@ -458,7 +477,24 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 self-end sm:self-auto">
+              <button
+                onClick={() => {
+                  setShowPolygonConfig(!showPolygonConfig);
+                  setPolygonFeedback(null);
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded border transition-all uppercase text-[9px] ${
+                  showPolygonConfig
+                    ? "bg-[#B08D57] text-[#0A111C] border-[#B08D57] font-bold"
+                    : "bg-[#B08D57]/15 hover:bg-[#B08D57]/25 text-[#E5C794] border-[#B08D57]/40"
+                }`}
+                title="Manage Polygon API Key"
+              >
+                <Key className="w-2.5 h-2.5" />
+                <span>{streamInfo.polygonData?.isUserKey ? "Account Key" : "Add Your Key"}</span>
+                {showPolygonConfig ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+              </button>
+
               <button
                 onClick={streamInfo.triggerPolygonVerify}
                 disabled={streamInfo.isPolygonVerifying}
@@ -466,10 +502,94 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
                 className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#B08D57]/15 hover:bg-[#B08D57]/25 text-[#E5C794] border border-[#B08D57]/40 hover:border-[#B08D57] transition-all uppercase text-[9px] disabled:opacity-50"
               >
                 <RefreshCw className={`w-2.5 h-2.5 ${streamInfo.isPolygonVerifying ? "animate-spin text-[#10B981]" : "text-[#B08D57]"}`} />
-                <span>{streamInfo.isPolygonVerifying ? "Auditing Tape..." : "Audit Polygon Tape"}</span>
+                <span>{streamInfo.isPolygonVerifying ? "Auditing..." : "Audit Tape"}</span>
               </button>
             </div>
           </div>
+
+          {/* Expandable Polygon Key Manager */}
+          {showPolygonConfig && (
+            <div className="p-3 rounded-lg bg-[#0E1A2B]/90 border border-[#B08D57]/30 space-y-2.5 animate-fade-in text-[10px]">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#E5C794] uppercase tracking-wider flex items-center gap-1.5 text-[10.5px]">
+                  <Key className="w-3 h-3 text-[#B08D57]" />
+                  <span>Polygon.io Account &amp; API Key Provisioning</span>
+                </span>
+                <a
+                  href="https://polygon.io"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[9px] text-[#93C5FD] hover:underline flex items-center gap-1 font-sans"
+                >
+                  <span>polygon.io signup</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </div>
+
+              <p className="text-[#8292A6] text-[9.5px] leading-relaxed">
+                The terminal is currently running with the verified system Polygon key (providing daily SIP aggregates, trade counts, and official VWAP). You can create an account at polygon.io and add your personal key anytime below. When added, real-time NBBO quotes and millisecond execution streaming will automatically unlock.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="password"
+                  value={polygonKeyInput}
+                  onChange={(e) => setPolygonKeyInput(e.target.value)}
+                  placeholder="Paste Polygon.io API key (e.g. HbefQu3...)"
+                  className="flex-1 bg-black/80 border border-[#B08D57]/30 focus:border-[#B08D57] rounded px-2.5 py-1 text-[#EDE9DE] placeholder-[#8292A6]/50 font-mono text-[10px] outline-none"
+                />
+                <button
+                  disabled={isConfiguringPolygon || !polygonKeyInput.trim()}
+                  onClick={async () => {
+                    if (!polygonKeyInput.trim()) return;
+                    setIsConfiguringPolygon(true);
+                    setPolygonFeedback(null);
+                    const res = await streamInfo.configurePolygonKey(polygonKeyInput.trim());
+                    setIsConfiguringPolygon(false);
+                    setPolygonFeedback({ success: res.success, text: res.message });
+                    if (res.success) {
+                      setPolygonKeyInput("");
+                    }
+                  }}
+                  className="px-3 py-1 bg-[#10B981]/20 hover:bg-[#10B981]/30 text-[#34D399] border border-[#10B981]/40 rounded font-bold uppercase transition-all disabled:opacity-50 text-[9.5px]"
+                >
+                  {isConfiguringPolygon ? "Validating Key..." : "Activate Key"}
+                </button>
+                {streamInfo.polygonData?.isUserKey && (
+                  <button
+                    disabled={isConfiguringPolygon}
+                    onClick={async () => {
+                      setIsConfiguringPolygon(true);
+                      const res = await streamInfo.resetPolygonKey();
+                      setIsConfiguringPolygon(false);
+                      setPolygonFeedback({ success: res.success, text: res.message });
+                    }}
+                    className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[#BAC7D5] border border-white/20 rounded uppercase transition-all text-[9.5px]"
+                  >
+                    Reset to Default
+                  </button>
+                )}
+              </div>
+
+              {polygonFeedback && (
+                <div className={`p-2 rounded border text-[9px] font-mono ${
+                  polygonFeedback.success 
+                    ? "bg-[#10B981]/10 text-[#34D399] border-[#10B981]/30" 
+                    : "bg-[#E11D48]/10 text-[#F87171] border-[#E11D48]/30"
+                }`}>
+                  {polygonFeedback.text}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-1 text-[8.5px] text-[#8292A6]">
+                <span>Status: <strong className="text-white font-mono">{streamInfo.polygonData?.tier === "paid_realtime" ? "Paid Real-Time NBBO" : "Free Aggregates & VWAP"}</strong></span>
+                <span>•</span>
+                <span>Active Feed: <strong className="text-white font-mono">{streamInfo.polygonData?.isUserKey ? "User Account" : "Default Built-In Key"}</strong></span>
+                <span>•</span>
+                <span>NBBO Entitlement: <strong className={streamInfo.polygonData?.liveNbboEntitled ? "text-[#10B981]" : "text-[#F59E0B]"}>{streamInfo.polygonData?.liveNbboEntitled ? "ENTITLED (LIVE)" : "STANDARD SIP"}</strong></span>
+              </div>
+            </div>
+          )}
 
           {/* Polygon Official VWAP & Volume Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">

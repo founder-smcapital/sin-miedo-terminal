@@ -3,21 +3,21 @@ import { ShieldCheck, Globe, BookOpen, MessageSquare, ExternalLink, Instagram, L
 
 export const Footer: React.FC = () => {
   return (
-    <footer id="smc-footer" className="mt-16 border-t border-[#B08D57]/20 bg-[#0E1A2B] text-[#8292A6]">
+    <footer id="smc-footer" className="mt-16 border-t border-[#1E293B] bg-[#080E18] text-[#8292A6]">
       {/* Top Footer Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Col 1: Brand & Thesis */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="font-serif italic text-lg font-bold tracking-widest text-[#B08D57]" style={{ fontFamily: "Georgia, serif" }}>
+              <span className="font-swiss-display text-lg font-bold tracking-tight text-[#EDE9DE]">
                 SIN MIEDO CAPITAL
               </span>
-              <span className="text-[9px] font-mono-data bg-[#B08D57]/20 text-[#B08D57] px-1.5 py-0.5 rounded border border-[#B08D57]/40">
+              <span className="text-[9px] font-mono-data bg-[#111A28] text-[#B08D57] px-1.5 py-0.5 rounded-sm border border-[#1E293B]">
                 SMC DESK
               </span>
             </div>
-            <p className="text-xs text-[#8292A6] leading-relaxed max-w-lg font-sans">
+            <p className="text-xs text-[#8292A6] leading-relaxed max-w-lg font-mono-data">
               Sin Miedo Capital is a boutique quantitative macro research and proprietary execution collective. We synthesize central bank liquidity interventions, geopolitical maritime chokepoints, satellite SAR dark fleet tracking, and European equity dynamics into actionable alpha.
             </p>
             <div className="text-[11px] font-mono-data text-[#EDE9DE] pt-1">

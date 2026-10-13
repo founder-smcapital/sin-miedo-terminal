@@ -147,16 +147,14 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
   return (
     <div id="intelligence-view-root" className="space-y-6 animate-in fade-in pb-12">
       {/* 1. Header Banner */}
-      <div className="bg-[#141923] border border-[#B08D57]/25 rounded-xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#B08D57]/5 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-[#0E1624] border border-[#1E293B] rounded-sm p-4 sm:p-6 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="bg-[#B08D57] text-[#0E1A2B] text-[10px] font-mono-data font-bold px-2 py-0.5 rounded tracking-widest uppercase">
+              <span className="bg-[#B08D57] text-[#0A111C] text-[10px] font-mono-data font-bold px-2 py-0.5 rounded-sm tracking-widest uppercase">
                 INSTITUTIONAL RESEARCH COMPENDIUM
               </span>
-              <span className="text-[10px] font-mono-data text-[#8292A6] flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded border border-[#B08D57]/20">
+              <span className="text-[10px] font-mono-data text-[#8292A6] flex items-center gap-1 bg-[#080E18] px-2 py-0.5 rounded-sm border border-[#1E293B]">
                 <ShieldCheck className="w-3 h-3 text-[#10B981]" />
                 VERIFIED CREDIBLE INSTITUTIONS ONLY
               </span>
@@ -166,20 +164,20 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
               </span>
             </div>
 
-            <h1 className="font-serif italic text-2xl sm:text-3xl lg:text-4xl font-bold text-[#EDE9DE] tracking-tight" style={{ fontFamily: "Georgia, serif" }}>
-              Macro Intelligence & Institutional Executive Summaries
+            <h1 className="font-swiss-display text-2xl sm:text-3xl lg:text-4xl font-bold text-[#FBF8F1] tracking-tight">
+              Macro Intelligence &amp; Institutional Executive Summaries
             </h1>
-            <p className="text-xs sm:text-sm text-[#8292A6] mt-2 leading-relaxed">
-              Curated, continuously refreshed executive research briefs from central banks (Bank of Japan, Banco de España, ECB), global tier-1 investment banks (Goldman Sachs, Morgan Stanley), energy institutes (Oxford Institute for Energy Studies, IEA), and maritime security authorities (CSIS, OFAC) directly synchronized with our 4 active macro trading engines.
+            <p className="text-xs sm:text-sm text-[#8292A6] mt-2 leading-relaxed font-mono-data">
+              Curated, continuously refreshed executive research briefs from central banks (Bank of Japan, Banco de España, ECB), global tier-1 investment banks (Goldman Sachs, Morgan Stanley), energy institutes (Oxford Institute for Energy Studies, IEA), and maritime security authorities (CSIS, OFAC) synchronized with our active macro desks.
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               id="download-complete-pack-btn"
               onClick={() => downloadCompleteBriefingPackPDF(institutionalBriefs)}
-              className="flex items-center gap-2 bg-[#B08D57] hover:bg-[#C49B5D] text-[#0E1A2B] font-bold text-xs px-4 py-2.5 rounded-lg shadow-lg hover:shadow-[#B08D57]/20 transition-all font-sans uppercase tracking-wider"
+              className="flex items-center gap-2 bg-[#B08D57] hover:bg-[#C49B5D] text-[#0A111C] font-bold text-xs px-3.5 py-2 rounded-sm transition-all font-mono-data uppercase tracking-wider cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download Full Pack (PDF)</span>
@@ -188,7 +186,7 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
             <button
               id="download-dashboard-state-pdf-btn"
               onClick={() => downloadDashboardReportPDF(macroData, { userSession, currency })}
-              className="flex items-center gap-2 bg-[#1A2234] hover:bg-[#25324B] text-[#E5C794] border border-[#B08D57]/40 font-bold text-xs px-3.5 py-2.5 rounded-lg shadow transition-all font-sans uppercase tracking-wider"
+              className="flex items-center gap-2 bg-[#111A28] hover:bg-[#182336] text-[#E5C794] border border-[#1E293B] hover:border-[#B08D57] font-bold text-xs px-3.5 py-2 rounded-sm transition-all font-mono-data uppercase tracking-wider cursor-pointer"
               title="Download full macro dashboard state, quantitative trading engines, and executive intelligence briefs as a formatted PDF"
             >
               <FileDown className="w-4 h-4 text-[#B08D57]" />
@@ -197,7 +195,7 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
 
             <button
               onClick={() => onOpenTerminalWithPrompt("Synthesize the top findings from the latest Bank of Japan and Goldman Sachs research briefs regarding JPY intervention risks")}
-              className="flex items-center gap-2 bg-black/60 hover:bg-black/90 text-[#EDE9DE] border border-[#B08D57]/40 font-semibold text-xs px-3.5 py-2.5 rounded-lg transition-all"
+              className="flex items-center gap-2 bg-[#111A28] hover:bg-[#182336] text-[#EDE9DE] border border-[#1E293B] hover:border-[#B08D57] font-semibold text-xs px-3.5 py-2 rounded-sm transition-all font-mono-data cursor-pointer"
               title="Open SMC Strategy Desk & Playbook"
             >
               <Crosshair className="w-4 h-4 text-[#B08D57]" />
@@ -207,93 +205,78 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
         </div>
 
         {/* Live Macro Linkage Summary Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-5 border-t border-[#B08D57]/15 text-xs font-mono-data">
-          <div className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15">
-            <span className="text-[9px] text-[#8292A6] block uppercase">BoJ FX Research Links</span>
-            <span className="text-[#10B981] font-bold">USD/JPY {macroData.engines.yenIntervention.spot} • {macroData.engines.yenIntervention.interventionOdds}% Odds (Plummeted)</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-5 pt-4 border-t border-[#1E293B] text-xs font-mono-data">
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
+            <span className="text-[9px] text-[#8292A6] block uppercase">US Fed H.4.1 Balance Sheet</span>
+            <span className="text-[#E5C794] font-bold">$6.81T • QT -$18.4B/Wk</span>
           </div>
-          <div
-            onClick={() => setViewMode("debt_buyback")}
-            className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15 hover:border-emerald-500/40 cursor-pointer transition-colors"
-            title="Click to view US Debt Buybacks ($6.0B weekly) vs BoJ FX Intervention comparison dossier"
-          >
-            <span className="text-[9px] text-[#8292A6] block uppercase flex items-center justify-between">
-              <span>US Debt Buybacks</span>
-              <span className="text-[8px] text-emerald-400 font-bold">DOSSIER &rarr;</span>
-            </span>
-            <span className="text-[#10B981] font-bold">$6.0B/wk • -$46.8M DV01</span>
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
+            <span className="text-[9px] text-[#8292A6] block uppercase">Treasury Buyback Pace</span>
+            <span className="text-[#38BDF8] font-bold">$6.0B / Week (Doubled)</span>
           </div>
-          <div className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15">
-            <span className="text-[9px] text-[#8292A6] block uppercase">Spanish Banking NIMs</span>
-            <span className="text-[#B08D57] font-bold">IBEX 35 {macroData.engines.ibexBias.level.toLocaleString()} • Core Long</span>
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
+            <span className="text-[9px] text-[#8292A6] block uppercase">BoJ Spot Defense Barrier</span>
+            <span className="text-[#10B981] font-bold">160.50 Line in Sand</span>
           </div>
-          <div
-            onClick={() => setViewMode("strategic_reserves")}
-            className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15 hover:border-red-500/40 cursor-pointer transition-colors"
-            title="Click to view strategic petroleum reserves, US 13.5M crude production, India-Russia trade flow, and Hormuz simulator"
-          >
-            <span className="text-[9px] text-[#8292A6] block uppercase flex items-center justify-between">
-              <span>Crude Telemetry &amp; SPR</span>
-              <span className="text-[8px] text-red-400 font-bold">VIEW &rarr;</span>
-            </span>
-            <span className="text-[#FF8585] font-bold">US Prod 13.5M • India-Russia 1.9M • SPR 358M</span>
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
+            <span className="text-[9px] text-[#8292A6] block uppercase">Crude Telemetry &amp; SPR</span>
+            <span className="text-[#FF8585] font-bold">US 13.5M • SPR 358M</span>
           </div>
-          <div className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15">
-            <span className="text-[9px] text-[#8292A6] block uppercase">Sanctions & Shadow Fleet</span>
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
+            <span className="text-[9px] text-[#8292A6] block uppercase">Sanctions &amp; Shadow Fleet</span>
             <span className="text-[#10B981] font-bold">412 Dark VLCCs • 1.62M bpd</span>
           </div>
-          <div className="bg-black/40 p-2.5 rounded border border-[#B08D57]/15 col-span-2 sm:col-span-1">
+          <div className="bg-[#080E18] p-2 rounded-sm border border-[#1E293B]">
             <span className="text-[9px] text-[#8292A6] block uppercase">BTC / Digital Gold Beta</span>
-            <span className="text-[#F7931A] font-bold">BTC ${typeof macroData.tickers.find(t=>t.symbol==='BTC/USD')?.price === 'number' ? macroData.tickers.find(t=>t.symbol==='BTC/USD')?.price.toLocaleString() : (macroData.tickers.find(t=>t.symbol==='BTC/USD')?.price || '79,380')} • r=+0.56</span>
+            <span className="text-[#F7931A] font-bold">BTC Beta r=+0.56</span>
           </div>
         </div>
       </div>
 
       {/* View Mode Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-black/60 border border-[#B08D57]/30 rounded-xl p-2 font-mono-data text-xs shadow-lg">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#0E1624] border border-[#1E293B] rounded-sm p-1.5 font-mono-data text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             id="view-compendium-btn"
             onClick={() => setViewMode("compendium")}
-            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-sm font-semibold transition-all flex items-center gap-2 ${
               viewMode === "compendium"
-                ? "bg-[#B08D57] text-[#0E1A2B] shadow-md"
+                ? "bg-[#B08D57] text-[#0A111C] font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE] hover:bg-white/5"
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             <span>Institutional Research Compendium</span>
-            <span className="text-[9px] bg-black/30 px-1.5 py-0.5 rounded font-normal">{institutionalBriefs.length} Docs</span>
+            <span className="text-[9px] bg-black/30 px-1.5 py-0.2 rounded-sm font-normal">{institutionalBriefs.length} Docs</span>
           </button>
 
           <button
             id="view-debt-buyback-dossier-btn"
             onClick={() => setViewMode("debt_buyback")}
-            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-sm font-semibold transition-all flex items-center gap-2 ${
               viewMode === "debt_buyback"
-                ? "bg-[#B08D57] text-[#0E1A2B] shadow-md shadow-[#B08D57]/30"
+                ? "bg-[#B08D57] text-[#0A111C] font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE] hover:bg-white/5"
             }`}
           >
-            <Landmark className="w-4 h-4 text-[#E5C794]" />
+            <Landmark className="w-3.5 h-3.5 text-[#E5C794]" />
             <span>US Debt Buybacks vs FX Defense</span>
-            <span className="text-[9px] bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 font-bold uppercase">
-              $6.0B / WK (DOUBLED)
+            <span className="text-[9px] bg-emerald-950/60 text-emerald-300 px-1.5 py-0.2 rounded-sm border border-emerald-500/30 font-bold uppercase">
+              $6.0B / WK
             </span>
           </button>
-
           <button
             id="view-central-bank-matrix-btn"
             onClick={() => setViewMode("central_bank_matrix")}
-            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-sm font-semibold transition-all flex items-center gap-2 ${
               viewMode === "central_bank_matrix"
-                ? "bg-[#B08D57] text-[#0E1A2B] shadow-md shadow-[#B08D57]/30"
+                ? "bg-[#B08D57] text-[#0A111C] font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE] hover:bg-white/5"
             }`}
           >
-            <Building2 className="w-4 h-4" />
+            <Building2 className="w-3.5 h-3.5" />
             <span>Central Bank Rate Matrix</span>
-            <span className="text-[9px] bg-black/40 text-[#E5C794] px-1.5 py-0.5 rounded border border-[#B08D57]/30 font-bold uppercase">
+            <span className="text-[9px] bg-black/40 text-[#E5C794] px-1.5 py-0.2 rounded-sm border border-[#B08D57]/30 font-bold uppercase">
               FED / ECB / BOJ
             </span>
           </button>
@@ -301,32 +284,32 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
           <button
             id="view-strategic-reserves-btn"
             onClick={() => setViewMode("strategic_reserves")}
-            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-sm font-semibold transition-all flex items-center gap-2 ${
               viewMode === "strategic_reserves"
-                ? "bg-[#EF4444] text-white shadow-md shadow-red-500/20"
+                ? "bg-[#A6291C] text-[#EDE9DE] font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE] hover:bg-white/5"
             }`}
           >
-            <Droplets className="w-4 h-4 text-[#FFA4A4]" />
-            <span>Crude Oil SPR, Production &amp; Flows</span>
-            <span className="text-[9px] bg-red-950/60 text-red-300 px-1.5 py-0.5 rounded border border-red-500/30 font-bold uppercase">
-              US 13.5M / INDIA-RUSSIA
+            <Droplets className="w-3.5 h-3.5 text-[#FFA4A4]" />
+            <span>Crude Oil SPR &amp; Flows</span>
+            <span className="text-[9px] bg-red-950/60 text-red-300 px-1.5 py-0.2 rounded-sm border border-red-500/30 font-bold uppercase">
+              US 13.5M
             </span>
           </button>
 
           <button
             id="view-sentiment-gauge-btn"
             onClick={() => setViewMode("sentiment")}
-            className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-sm font-semibold transition-all flex items-center gap-2 ${
               viewMode === "sentiment"
-                ? "bg-[#A6291C] text-[#EDE9DE] shadow-md shadow-[#A6291C]/30"
+                ? "bg-[#A6291C] text-[#EDE9DE] font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE] hover:bg-white/5"
             }`}
           >
-            <Radio className="w-4 h-4 text-[#FFA4A4]" />
-            <span>Sentiment Gauge &amp; Live Risk Monitor</span>
-            <span className="text-[9px] bg-[#FFA4A4]/20 text-[#FFA4A4] px-1.5 py-0.5 rounded border border-[#FFA4A4]/30 font-bold uppercase">
-              DEFCON 2 LIVE
+            <Radio className="w-3.5 h-3.5 text-[#FFA4A4]" />
+            <span>Sentiment Gauge &amp; Risk Monitor</span>
+            <span className="text-[9px] bg-[#FFA4A4]/20 text-[#FFA4A4] px-1.5 py-0.2 rounded-sm border border-[#FFA4A4]/30 font-bold uppercase">
+              DEFCON 2
             </span>
           </button>
         </div>

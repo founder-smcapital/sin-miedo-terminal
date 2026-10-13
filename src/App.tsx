@@ -85,7 +85,8 @@ export default function App() {
       } catch (e) {}
     }
   };
-// Auth State: checks sessionStorage for active session
+
+  // Auth State: checks sessionStorage for active session
   const [userSession, setUserSession] = useState<UserSession>(() => {
     try {
       const saved = sessionStorage.getItem("smc_authenticated_session");
@@ -173,6 +174,7 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
   // Accessibility: Calm Mode (Subdues motion, pings, marquee scrolling, and card transitions for sensory sensitivity)
   const [isCalmMode, setIsCalmMode] = useState<boolean>(() => {
     try {
@@ -600,7 +602,6 @@ export default function App() {
     setUserSession(session);
     try {
       sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      localStorage.setItem("smc_authenticated_session", JSON.stringify(session));
     } catch (err) {
       // storage disabled
     }

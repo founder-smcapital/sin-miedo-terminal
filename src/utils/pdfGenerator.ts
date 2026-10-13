@@ -841,7 +841,7 @@ export const downloadDashboardReportPDF = (
   y = drawSectionHeading(doc, y, "1B. Key Risk Assets 24H Momentum & Session Range", "NORMALIZED INTRADAY PERCENTILE BARS");
 
   const riskAssets = [
-    { sym: "BRENT", name: "Brent Crude Oil", price: "$104.20", change: "+3.8%", pos: 0.88, low: "$100.80", high: "$106.40", color: cRed },
+    { sym: "BRENT", name: "Brent Crude Oil", price: "$76.85", change: "+0.42%", pos: 0.62, low: "$75.90", high: "$77.40", color: cGreen },
     { sym: "XAU/USD", name: "Gold Spot", price: "$4,185.60", change: "+1.3%", pos: 0.82, low: "$4,128.20", high: "$4,198.80", color: cGold },
     { sym: "SPX", name: "S&P 500 Index", price: "7,654.80", change: "+0.86%", pos: 0.72, low: "7,610.50", high: "7,688.00", color: cGreen },
     { sym: "IBEX 35", name: "IBEX 35 Benchmark", price: "19,812.00", change: "+0.91%", pos: 0.78, low: "19,640.00", high: "19,884.00", color: cGreen },

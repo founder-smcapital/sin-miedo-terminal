@@ -162,6 +162,84 @@ export const TIER_PASSCODES: Record<string, string> = {
   "Sovereign Desk": "SMC-SOVEREIGN-DESK"
 };
 
+export interface AuthorizedUserCredential {
+  email: string;
+  name: string;
+  tier: ClearanceTier;
+  passcode: string;
+  password?: string;
+  role: "admin" | "analyst" | "partner" | "founding_member";
+}
+
+// Authorized Institutional Accounts Whitelist
+// tradeinmotions@gmail.com is configured with Founding Member clearance.
+// Additional authorized institutional emails will be registered here.
+export const AUTHORIZED_USERS: AuthorizedUserCredential[] = [
+  {
+    email: "tradeinmotions@gmail.com",
+    name: "Member #01",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "mrodfher@gmail.com",
+    name: "Member #02",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "dana.j.spears@gmail.com",
+    name: "Member #03",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "kingsleftgold@gmail.com",
+    name: "Member #04",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "eduardoharo12@gmail.com",
+    name: "Member #05",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "ericapp36@proton.me",
+    name: "Member #06",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  },
+  {
+    email: "jjkexpansion042@gmail.com",
+    name: "Member #07",
+    tier: "Founding Member",
+    passcode: "SMC-FOUNDING-2026",
+    password: "SinMiedo2026!",
+    role: "founding_member"
+  }
+];
+
+export function findAuthorizedUser(email: string): AuthorizedUserCredential | undefined {
+  if (!email) return undefined;
+  return AUTHORIZED_USERS.find(
+    (u) => u.email.toLowerCase().trim() === email.toLowerCase().trim()
+  );
+}
+
 // Helper: Ensure user profile exists in Firestore and update profile data with selected tier
 export async function syncUserProfile(
   user: User,

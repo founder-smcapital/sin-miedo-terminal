@@ -228,45 +228,45 @@ export const MiddleEastRiskEngine: React.FC<MiddleEastRiskEngineProps> = ({
       className={
         isExpanded
           ? "space-y-6 text-[#EDE9DE]"
-          : "bg-[#101622] border border-[#B08D57]/35 hover:border-[#B08D57]/55 rounded-xl p-4 sm:p-6 transition-all shadow-2xl flex flex-col justify-between relative group overflow-hidden"
+          : "bg-[#0E1624] border border-[#1E293B] hover:border-[#B08D57]/40 rounded-sm p-3.5 sm:p-5 transition-all shadow-none flex flex-col justify-between relative group overflow-hidden"
       }
     >
       {/* Subtle top brass highlight */}
       {!isExpanded && (
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/40 to-transparent pointer-events-none" />
       )}
 
       {/* Top Header & Sub-Tabs */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#B08D57]/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1E293B]">
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <h3 className="font-serif italic text-xl sm:text-2xl font-bold tracking-tight text-[#FBF8F1]" style={{ fontFamily: "Georgia, 'Newsreader', serif" }}>
-              Middle East War-Risk & Maritime
+              Middle East War-Risk &amp; Maritime
             </h3>
-            <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#A6291C]/30 text-[#FFA4A4] border border-[#A6291C]/60 px-2.5 py-0.5 rounded flex items-center gap-1 shadow-sm shrink-0 whitespace-nowrap">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FFA4A4]" />
+            <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#A6291C]/20 text-[#FFA4A4] border border-[#A6291C]/50 px-2 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-none bg-[#FFA4A4]" />
               DEFCON 2
             </span>
           </div>
 
           {/* Sub Tab Switcher & Fullscreen */}
           <div className="flex items-center gap-2 max-w-full min-w-0 w-full xl:w-auto">
-            <div className="flex items-center bg-black/70 p-1 rounded-lg border border-[#B08D57]/30 text-[10px] font-mono-data shadow-inner overflow-x-auto no-scrollbar max-w-full min-w-0 flex-1 scroll-smooth">
+            <div className="flex items-center bg-[#080E18] p-0.5 rounded-sm border border-[#1E293B] text-[10px] font-mono-data overflow-x-auto no-scrollbar max-w-full min-w-0 flex-1 scroll-smooth">
               {currentTabs.map((tabItem) => (
                 <button
                   key={tabItem.id}
                   onClick={() => setActiveSubTab(tabItem.id)}
-                  className={`px-2 sm:px-2.5 py-1 rounded transition-all uppercase font-medium flex items-center gap-1 shrink-0 whitespace-nowrap text-[9px] sm:text-[10px] ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-sm transition-all uppercase font-medium flex items-center gap-1 shrink-0 whitespace-nowrap text-[9px] sm:text-[10px] ${
                     activeSubTab === tabItem.id
                       ? tabItem.id === "Sentiment Gauge" || tabItem.id === "GPR 24M History" || tabItem.id === "Live Telemetry"
-                        ? "bg-[#A6291C] text-[#EDE9DE] font-bold shadow-md scale-105"
-                        : "bg-[#B08D57] text-[#0A111C] font-bold shadow-md scale-105"
+                        ? "bg-[#A6291C] text-[#EDE9DE] font-bold"
+                        : "bg-[#B08D57] text-[#0A111C] font-bold"
                       : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
                   }`}
                   title={tabItem.full}
                 >
-                  {"dot" in tabItem && tabItem.dot && <span className="w-1.5 h-1.5 rounded-full bg-[#FFA4A4] shrink-0" />}
-                  {"radio" in tabItem && tabItem.radio && <Radio className="w-2.5 h-2.5 text-[#FFA4A4] shrink-0 animate-pulse" />}
+                  {"dot" in tabItem && tabItem.dot && <span className="w-1.5 h-1.5 rounded-none bg-[#FFA4A4] shrink-0" />}
+                  {"radio" in tabItem && tabItem.radio && <Radio className="w-2.5 h-2.5 text-[#FFA4A4] shrink-0" />}
                   {"flame" in tabItem && tabItem.flame && <Flame className="w-2.5 h-2.5 text-[#FFA4A4] shrink-0" />}
                   <span className={isExpanded ? "inline" : "hidden 2xl:inline"}>{tabItem.full}</span>
                   <span className={isExpanded ? "hidden" : "2xl:hidden"}>{tabItem.short}</span>

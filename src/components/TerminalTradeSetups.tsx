@@ -35,7 +35,7 @@ export interface TradeSetupItem {
   orderType: string;
   // Deep Institutional Strategy Fields
   strategyThesis: string;
-  propFirmRule: string;
+  institutionalRiskRule: string;
   keyLevels: {
     vwap: string;
     poc: string;
@@ -60,7 +60,7 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
   defaultSelectedId = "mes"
 }) => {
   const [selectedId, setSelectedId] = useState<string>(defaultSelectedId);
-  const [activeDetailView, setActiveDetailView] = useState<"strategy" | "levels" | "prop_sizing">("strategy");
+  const [activeDetailView, setActiveDetailView] = useState<"strategy" | "levels" | "risk_sizing">("strategy");
 
   // Derive dynamic live prices from macro telemetry
   const btcTicker = macroData.tickers?.find(t => t.symbol === "BTC/USD");
@@ -87,11 +87,11 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       target2: "5,810.00 (All-Time Liquidity Pool)",
       riskReward: "3.4 : 1",
       catalyst: "DXY softening under 102.20 cap; Treasury $24B/mo buyback program absorbs dealer duration; positive earnings revision breadth.",
-      orderType: "Limit Bracket with OCO Stop-Loss via Tradovate / TradingView",
+      orderType: "Limit Bracket with OCO Stop-Loss via Institutional Gateway",
       strategyThesis:
         "The S&P 500 index continues to be anchored by robust mega-cap balance sheets and steady corporate cash flows. With the Dollar Index (DXY) facing repeated rejection at 102.20, USD-denominated corporate revenue translation headwinds are subdued. We favor taking scaled bids on shallow morning pullbacks into the developing Value Area High (VAH) or VWAP rather than chasing breakouts above overnight highs.",
-      propFirmRule:
-        "MyFundedFutures (MFFU) Trailing Drawdown Rule: On a $50k account with a $2,000 trailing drawdown buffer, limit exposure to 2-3 MES contracts maximum. A 20-point stop on 2 MES equals -$200 loss (10% of total trailing buffer), preserving trading room and preventing drawdown blowouts.",
+      institutionalRiskRule:
+        "Institutional Portfolio Risk Rule: On standard allocator books, enforce a strict 0.5% - 1.0% NAV risk parameter per thematic execution. A 20-point stop on MES represents -$100 per contract, keeping capital preservation metrics intact while scaling position sizes into structural confirmation shelves.",
       keyLevels: {
         vwap: "5,738.50",
         poc: "5,741.00",
@@ -123,8 +123,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "Iceberg Limit at US Cash Session Open",
       strategyThesis:
         "High-duration tech equities display strong relative strength versus the broader market. When US 10-year yields trade sideways to lower, Nasdaq components expand multiples rapidly. We target entries at the lower boundary of the overnight Value Area with strict bracket stops.",
-      propFirmRule:
-        "Prop Volatility Sizing: Nasdaq beta is ~1.5x S&P 500. For MFFU accounts, size down to 1-2 MNQ contracts. Each point in MNQ is $2.00; a 70-point stop equals $140 per contract. Never trade more than 2 MNQ simultaneously during high-volatility opens.",
+      institutionalRiskRule:
+        "Volatility-Adjusted Beta Sizing: Nasdaq beta is ~1.5x S&P 500. Calibrate contract exposure to preserve equivalent portfolio volatility across index legs. Each point in MNQ is $2.00; an 80-point stop represents $160 per contract. Maintain strict staggered entry tranches during opening cash cross discovery.",
       keyLevels: {
         vwap: "20,395.00",
         poc: "20,410.00",
@@ -156,8 +156,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "Scaled Limit Bids / TWAP on US Open",
       strategyThesis:
         "Bitcoin continues its macro debasement supercycle, co-trending with physical Gold as institutional treasuries reallocate reserves away from negative-yielding sovereign debt duration. Spot ETF inflows absorb secondary market supply on all tests of prior resistance turned support.",
-      propFirmRule:
-        "For Micro Bitcoin ($MBT) futures: Tick value is $0.50 per 0.1 BTC ($5 per point). A 1,000-point stop is $100 per MBT contract. Size conservatively at 1-2 contracts.",
+      institutionalRiskRule:
+        "Digital Reserve Sizing: For Micro Bitcoin ($MBT) futures, tick value is $0.50 per 0.1 BTC ($5 per point). A 1,000-point stop is $100 per MBT contract. Size conservatively within portfolio digital asset allocation boundaries.",
       keyLevels: {
         vwap: "$79,150",
         poc: "$79,300",
@@ -188,8 +188,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "Staggered Bilateral Limit Bids",
       strategyThesis:
         "Following the unannounced stealth intervention that pushed USD/JPY down from 160.22, the bilateral carry trade yield differential remains intensely wide (+219 bps 10Y UST-JGB spread). Retail short positions accumulate on fears of further MoF intervention, but fundamentally, institutional carry flows step in near Tokyo shelf support.",
-      propFirmRule:
-        "FX Micro Futures (6J / M6J): Volatility can expand rapidly around Bank of Japan rate check headlines. Always keep hard stops in place.",
+      institutionalRiskRule:
+        "FX Institutional Execution Rule: For currency futures (6J / M6J) and OTC spot books, volatility can expand rapidly during Bank of Japan rate checks. Restrict maximum position delta to predetermined portfolio VaR boundaries with hard stops.",
       keyLevels: {
         vwap: "155.95",
         poc: "156.10",
@@ -220,8 +220,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "VWAP Algo on BME Madrid Session",
       strategyThesis:
         "The IBEX 35 index is heavily weighted toward high-quality Spanish commercial lenders (Santander, BBVA, CaixaBank) which are capturing record net interest margins. The Spanish sovereign risk premium is subdued, driving international institutional capital into Madrid equities.",
-      propFirmRule:
-        "European indices trade during London/Madrid hours (8:00 AM - 4:30 PM CET). Avoid holding through high-impact ECB rate statements.",
+      institutionalRiskRule:
+        "European Cross-Market Risk Rule: European indices trade during London/Madrid cash hours (8:00 AM - 4:30 PM CET). Coordinate index exposure with Banco de España and ECB policy announcements.",
       keyLevels: {
         vwap: "19,510",
         poc: "19,540",
@@ -252,8 +252,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "Bull Call Spread or Micro Crude (MCL) Limit Bids",
       strategyThesis:
         "Crude oil prices carry an embedded geopolitical risk premium of $4.20/bbl due to persistent maritime shipping disruptions and the Iranian shadow fleet surveillance. However, pre-market US Dollar strength caps crude rallies, making the $99.80-$100.50 level a strict tactical pivot.",
-      propFirmRule:
-        "Micro WTI Crude (MCL): 1 contract = 100 barrels ($1.00 move = $100). A $1.20 stop equals $120 risk, making it an ideal sizing vehicle for prop firm accounts.",
+      institutionalRiskRule:
+        "Energy Derivative Sizing Rule: Micro WTI Crude (MCL): 1 contract = 100 barrels ($1.00 move = $100). A $1.20 stop equals $120 risk per contract, enabling granular exposure scaling across energy desks.",
       keyLevels: {
         vwap: "$100.25",
         poc: "$100.40",
@@ -284,8 +284,8 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
       orderType: "Algorithmic Limit Accumulation",
       strategyThesis:
         "Central banks across the global South continue to diversify reserves away from US dollar assets and Treasury paper into physical bullion. Gold exhibits asymmetric upside on any flight to safety or fiscal debt servicing escalation.",
-      propFirmRule:
-        "Micro Gold (MGC): 1 contract = 10 troy oz ($1.00 move = $10). A $20 stop equals $200 risk per contract.",
+      institutionalRiskRule:
+        "Bullion Sovereign Sizing Rule: Micro Gold (MGC): 1 contract = 10 troy oz ($1.00 move = $10). A $20 stop equals $200 risk per contract, structured to accommodate broader macro cycle horizons.",
       keyLevels: {
         vwap: "$4,402",
         poc: "$4,408",
@@ -435,15 +435,15 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveDetailView("prop_sizing")}
+            onClick={() => setActiveDetailView("risk_sizing")}
             className={`px-2.5 py-1 rounded text-[10px] font-mono-data transition-all flex items-center gap-1 ${
-              activeDetailView === "prop_sizing"
+              activeDetailView === "risk_sizing"
                 ? "bg-[#B08D57]/25 text-[#E5C794] border border-[#B08D57]/50 font-bold"
                 : "text-[#8292A6] hover:text-[#EDE9DE]"
             }`}
           >
             <Shield className="w-3 h-3 text-[#B08D57]" />
-            <span>Prop Firm Sizing (MFFU)</span>
+            <span>Institutional Risk &amp; Sizing</span>
           </button>
         </div>
 
@@ -493,17 +493,17 @@ export const TerminalTradeSetups: React.FC<TerminalTradeSetupsProps> = ({
           </div>
         )}
 
-        {activeDetailView === "prop_sizing" && (
+        {activeDetailView === "risk_sizing" && (
           <div className="bg-black/30 border border-white/5 rounded p-2.5 space-y-2 text-xs">
             <div className="flex items-center gap-1.5 text-[#E5C794] font-mono-data text-[11px] font-bold">
               <Shield className="w-3.5 h-3.5 text-[#B08D57]" />
-              <span>Prop Firm Account Protection Blueprint (Tradovate / TradingView)</span>
+              <span>Institutional Portfolio Capital Protection Framework</span>
             </div>
             <p className="text-[#EDE9DE]/90 leading-relaxed font-sans text-[11.5px]">
-              {activeSetup.propFirmRule}
+              {activeSetup.institutionalRiskRule}
             </p>
-            <div className="bg-amber-950/30 border border-amber-600/30 rounded p-2 text-[10px] font-mono-data text-amber-200/90 leading-snug">
-              <strong>Bracket Stop Rule:</strong> In Tradovate/TradingView, configure an auto-bracket of <strong>OCO (Order Cancels Order)</strong> immediately upon entry. Never allow an unbracketed position into high-impact releases.
+            <div className="bg-[#111A28] border border-[#1E293B] rounded p-2 text-[10px] font-mono-data text-[#BAC7D5] leading-snug">
+              <strong className="text-[#B08D57]">Desk Execution Rule:</strong> Maintain pre-trade conditional <strong>OCO (Order Cancels Order)</strong> brackets on order ingestion. Positions must adhere to maximum drawdown tolerance thresholds before market liquidity entry.
             </div>
           </div>
         )}

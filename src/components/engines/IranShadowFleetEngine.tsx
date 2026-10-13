@@ -361,7 +361,7 @@ const stsHubsData: StsHubRecord[] = [
 
 export const IranShadowFleetEngine: React.FC<IranShadowFleetEngineProps> = ({
   data,
-  brentPrice = 105.25,
+  brentPrice = 76.85,
   onExpandToggle,
   isExpanded = false,
 }) => {
@@ -459,20 +459,20 @@ export const IranShadowFleetEngine: React.FC<IranShadowFleetEngineProps> = ({
       className={
         isExpanded
           ? "space-y-6 text-[#EDE9DE]"
-          : "bg-[#101622] border border-[#B08D57]/35 hover:border-[#B08D57]/55 rounded-xl p-4 sm:p-6 transition-all shadow-2xl flex flex-col justify-between relative group overflow-hidden"
+          : "bg-[#0E1624] border border-[#1E293B] hover:border-[#B08D57]/40 rounded-sm p-3.5 sm:p-5 transition-all shadow-none flex flex-col justify-between relative group overflow-hidden"
       }
     >
       {/* Subtle top brass highlight */}
       {!isExpanded && (
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#B08D57]/40 to-transparent pointer-events-none" />
       )}
 
       {/* Top Header & Sub-Tabs */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#B08D57]/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1E293B]">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#A6291C]/20 border border-[#A6291C]/40 text-[#FF8585]">
+              <span className="p-1 rounded-sm bg-[#A6291C]/20 border border-[#A6291C]/40 text-[#FF8585]">
                 <Ship className="w-4 h-4" />
               </span>
               <div>
@@ -483,14 +483,14 @@ export const IranShadowFleetEngine: React.FC<IranShadowFleetEngineProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-black/70 text-[#E5C794] border border-[#B08D57]/45 px-2.5 py-0.5 rounded shadow-sm flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E5C794] animate-pulse" />
+              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#080E18] text-[#E5C794] border border-[#1E293B] px-2 py-0.5 rounded-sm flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#E5C794]" />
                 {corridorFilter === "iran" ? "412 IRAN HULLS" : corridorFilter === "russia" ? "685 RUSSIA HULLS" : "1,097 DUAL-CORRIDOR HULLS"}
               </span>
-              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-amber-950/70 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded shadow-sm">
+              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#080E18] text-amber-300 border border-[#1E293B] px-2 py-0.5 rounded-sm">
                 88.0% RUSSIA→INDIA DARK
               </span>
-              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-black/70 text-[#34D399] border border-[#10B981]/45 px-2.5 py-0.5 rounded shadow-sm">
+              <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#080E18] text-[#34D399] border border-[#1E293B] px-2 py-0.5 rounded-sm">
                 {combinedOutflowBpd} OUTFLOW
               </span>
             </div>
@@ -498,14 +498,14 @@ export const IranShadowFleetEngine: React.FC<IranShadowFleetEngineProps> = ({
 
           {/* Sub Tab Switcher & Fullscreen */}
           <div className="flex items-center gap-2 max-w-full min-w-0 w-full xl:w-auto">
-            <div className="flex items-center bg-black/70 p-1 rounded-lg border border-[#B08D57]/30 text-[10px] font-mono-data overflow-x-auto no-scrollbar max-w-full min-w-0 flex-1 scroll-smooth shadow-inner">
+            <div className="flex items-center bg-[#080E18] p-0.5 rounded-sm border border-[#1E293B] text-[10px] font-mono-data overflow-x-auto no-scrollbar max-w-full min-w-0 flex-1 scroll-smooth">
               {(["Pricing Matrix", "24M Correlation [D3]", "Fleet Radar", "Manifest", "STS Hubs", "Flows", "Syndicate Nexus"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveSubTab(tab)}
-                  className={`px-2 sm:px-2.5 py-1 rounded transition-all whitespace-nowrap text-[9px] sm:text-[10px] uppercase font-medium shrink-0 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-sm transition-all whitespace-nowrap text-[9px] sm:text-[10px] uppercase font-medium shrink-0 ${
                     activeSubTab === tab
-                      ? "bg-[#B08D57] text-[#0A111C] font-bold shadow-md scale-105"
+                      ? "bg-[#B08D57] text-[#0A111C] font-bold"
                       : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
                   }`}
                 >

@@ -24,13 +24,14 @@
   html, body {
     background-color: #0A111C;
     color: #EDE9DE;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.012em;
     overflow-x: hidden;
     max-width: 100vw;
   }
 }
 
-/* Subtle Film Grain Texture Overlay for Dark-Editorial Atmosphere */
+/* Subtle Film Grain Texture Overlay for High-Precision Atmosphere */
 .grain-overlay {
   position: fixed;
   top: 0;
@@ -39,22 +40,25 @@
   height: 100vh;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.042;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   background-repeat: repeat;
+  transform: translateZ(0);
+  will-change: opacity;
+  contain: strict;
 }
 
-/* High-contrast dark-editorial card container */
+/* High-contrast dark-editorial card container - Precision Institutional Workstation */
 .dark-editorial-card {
-  background-color: #101622;
-  border: 1px solid rgba(176, 141, 87, 0.28);
+  background-color: #0E1624;
+  border: 1px solid #1E293B;
+  border-radius: 2px;
   position: relative;
-  transition: all 0.25s ease;
+  transition: border-color 0.15s ease;
 }
 
 .dark-editorial-card:hover {
-  border-color: rgba(176, 141, 87, 0.5);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(176, 141, 87, 0.08);
+  border-color: rgba(176, 141, 87, 0.45);
 }
 
 .dark-editorial-card::before {
@@ -64,13 +68,25 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(176, 141, 87, 0.6) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(176, 141, 87, 0.4) 50%, transparent 100%);
   pointer-events: none;
 }
 
-/* Performance Optimizations for Older Hardware & High-Density Dashboards */
+/* Precision Hairline Section Dividers */
+.hairline-b {
+  border-bottom: 1px solid #1E293B;
+}
+
+.hairline-r {
+  border-right: 1px solid #1E293B;
+}
+
+.hairline-t {
+  border-top: 1px solid #1E293B;
+}
+
+/* Performance Optimizations for High-Density Financial Dashboards */
 .dashboard-card-defer {
-  /* Render cleanly without content-visibility blank void or artificial placeholder height */
   contain: layout style;
 }
 
@@ -79,35 +95,45 @@
   backface-visibility: hidden;
 }
 
+.font-swiss-display {
+  font-family: 'Plus Jakarta Sans', 'IBM Plex Sans', -apple-system, sans-serif;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
 .font-editorial {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Plus Jakarta Sans', 'IBM Plex Sans', sans-serif;
 }
 
 .font-cinzel {
-  font-family: 'Cinzel', Georgia, serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .font-serif-brand {
-  font-family: Georgia, 'Newsreader', serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .font-mono-data {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Custom scrollbars for high-density financial terminals */
+/* Custom hairline scrollbars for high-density financial terminals */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0E1A2B;
+  background: #080E18;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #253347;
-  border-radius: 3px;
+  background: #1E293B;
+  border-radius: 1px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -126,11 +152,11 @@
 
 @keyframes signal-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  50% { opacity: 0.4; }
 }
 
 .animate-signal {
-  animation: signal-blink 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: signal-blink 2s ease-in-out infinite;
 }
 
 /* Continuous financial carousel / marquee ticker */

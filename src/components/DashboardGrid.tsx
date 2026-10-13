@@ -5,7 +5,7 @@ import { YenInterventionEngine } from "./engines/YenInterventionEngine";
 import { IbexPropEngine } from "./engines/IbexPropEngine";
 import { AssetSparklines } from "./AssetSparklines";
 import type { MiddleEastSubTab } from "./engines/MiddleEastRiskEngine";
-import { X, Layers, Sparkles, RefreshCw, FileDown, Crosshair, TrendingUp, Flame, Activity, Shield, Lock, Unlock, ArrowRight, Award, Building2, Zap, Globe, DollarSign } from "lucide-react";
+import { X, Layers, RefreshCw, FileDown, FileText, Crosshair, TrendingUp, Flame, Activity, Shield, Lock, Unlock, ArrowRight, Award, Building2, Zap, Globe, DollarSign } from "lucide-react";
 
 // Progressive High-Performance Chunking: Heavy analytical, Recharts & GIS modules loaded on-demand
 const MiddleEastRiskEngine = lazy(() => import("./engines/MiddleEastRiskEngine").then((m) => ({ default: m.MiddleEastRiskEngine })));
@@ -163,52 +163,52 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
       {/* Top Section Header & Quick Action Row */}
       <motion.div
         variants={activeCardVariants}
-        className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#B08D57]/35 relative"
+        className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1E293B] relative"
       >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#B08D57]" />
-            <span className="text-[10px] font-mono-data font-bold tracking-[0.2em] text-[#E5C794] uppercase">
-              Institutional Intelligence Terminal
+            <span className="w-1.5 h-1.5 rounded-none bg-[#B08D57]" />
+            <span className="text-[10px] font-mono-data font-semibold tracking-[0.16em] text-[#E5C794] uppercase">
+              Quantitative Macro Workstation
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif italic font-bold text-[#FBF8F1] tracking-tight" style={{ fontFamily: "Georgia, 'Newsreader', serif" }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#FBF8F1] tracking-tight font-swiss-display">
             Macro Command Grid
           </h1>
           <p className="text-[11px] font-mono-data text-[#BAC7D5] tracking-wider">
-            REAL-TIME QUANTITATIVE RISK & GEOPOLITICAL FLOW ARCHITECTURE // SMC DESK
+            REAL-TIME QUANTITATIVE RISK &amp; GEOPOLITICAL FLOW ARCHITECTURE · SMC TRADING DESK
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <button
             id="download-dashboard-pdf-btn"
             onClick={handleDownloadDashboardPdf}
             disabled={isGeneratingPdf}
-            className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest bg-[#111724] hover:bg-[#1A2234] text-[#E5C794] hover:text-[#FBF8F1] px-3.5 sm:px-4 py-2 rounded-lg border border-[#B08D57]/45 hover:border-[#B08D57] transition-all font-mono-data shadow-md group disabled:opacity-50"
-            title="Export Daily Macro Briefing PDF with vector VIX volatility charts, risk ranges, and snippets (desk actions omitted for content use)"
+            className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider bg-[#111A28] hover:bg-[#182336] text-[#E5C794] hover:text-[#FBF8F1] px-3 py-1.5 rounded-sm border border-[#1E293B] hover:border-[#B08D57]/50 transition-all font-mono-data shadow-none group disabled:opacity-50"
+            title="Export Daily Macro Briefing PDF with vector VIX volatility charts, risk ranges, and snippets"
           >
             {isGeneratingPdf ? (
               <RefreshCw className="w-3.5 h-3.5 text-[#B08D57] animate-spin" />
             ) : (
               <FileDown className="w-3.5 h-3.5 text-[#B08D57] group-hover:translate-y-0.5 transition-transform" />
             )}
-            <span>{isGeneratingPdf ? "Generating..." : "Briefing PDF (Snippets)"}</span>
+            <span>{isGeneratingPdf ? "Generating..." : "Briefing PDF"}</span>
           </button>
 
           <button
             id="open-executive-summary-btn"
             onClick={onOpenSummaryDrawer}
-            className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest bg-[#111724] hover:bg-[#1A2234] text-[#FBF8F1] px-4 py-2 rounded-lg border border-[#B08D57]/45 hover:border-[#B08D57] transition-all font-mono-data shadow-md group"
+            className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider bg-[#111A28] hover:bg-[#182336] text-[#FBF8F1] px-3 py-1.5 rounded-sm border border-[#1E293B] hover:border-[#B08D57]/50 transition-all font-mono-data shadow-none group cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#E5C794] group-hover:rotate-12 transition-transform" />
+            <FileText className="w-3.5 h-3.5 text-[#E5C794] group-hover:scale-105 transition-transform" />
             <span>Executive Brief</span>
           </button>
 
           <button
             id="quick-terminal-btn"
             onClick={() => onOpenTerminal()}
-            className="flex items-center gap-1.5 text-[10px] bg-[#B08D57] hover:bg-[#C9A46D] text-[#0A111C] font-bold px-4 py-2 rounded-lg shadow-lg hover:shadow-[0_0_20px_rgba(176,141,87,0.3)] transition-all font-sans uppercase tracking-widest active:scale-95"
+            className="flex items-center gap-1.5 text-[10px] bg-[#B08D57] hover:bg-[#C9A46D] text-[#0A111C] font-bold px-3.5 py-1.5 rounded-sm shadow-none transition-all uppercase tracking-wider active:scale-95 cursor-pointer font-mono-data"
             title="Open SMC Strategy Desk & Macro Takeaways"
           >
             <Crosshair className="w-3.5 h-3.5" />
@@ -220,22 +220,22 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
       {/* Mode Switcher: Trader Mode (Intraday Focus) vs Macro Mode (Full Sovereign Stack) */}
       <motion.div
         variants={activeCardVariants}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#0d131f]/95 border border-[#B08D57]/35 rounded-xl shadow-lg relative overflow-hidden"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 bg-[#0E1624] border border-[#1E293B] rounded-sm relative overflow-hidden"
       >
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex p-1 bg-black/70 rounded-lg border border-[#B08D57]/30">
+          <div className="flex p-0.5 bg-[#080E18] rounded-sm border border-[#1E293B]">
             <button
               id="dashboard-mode-trader-btn"
               onClick={() => handleViewModeChange("trader")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-mono-data font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-mono-data font-semibold transition-all cursor-pointer ${
                 dashboardViewMode === "trader"
-                  ? "bg-[#B08D57] text-[#0A111C] shadow-md"
+                  ? "bg-[#B08D57] text-[#0A111C] shadow-none font-bold"
                   : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
               <span>Trader Mode</span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-normal ${
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-sm font-mono-data ${
                 dashboardViewMode === "trader" ? "bg-black/25 text-[#0A111C] font-semibold" : "bg-white/10 text-[#8292A6]"
               }`}>
                 Intraday
@@ -245,15 +245,15 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
             <button
               id="dashboard-mode-macro-btn"
               onClick={() => handleViewModeChange("macro")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-mono-data font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-mono-data font-semibold transition-all cursor-pointer ${
                 dashboardViewMode === "macro"
-                  ? "bg-[#B08D57] text-[#0A111C] shadow-md"
+                  ? "bg-[#B08D57] text-[#0A111C] shadow-none font-bold"
                   : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
               <span>Macro Mode</span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-normal ${
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-sm font-mono-data ${
                 dashboardViewMode === "macro" ? "bg-black/25 text-[#0A111C] font-semibold" : "bg-white/10 text-[#8292A6]"
               }`}>
                 Full Stack
@@ -277,12 +277,12 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-2 text-[10px] font-mono-data text-[#8292A6]">
-          <span className="bg-black/50 px-2.5 py-1 rounded border border-white/5 text-[#BAC7D5]">
-            {dashboardViewMode === "trader" ? "⚡ 4 Intraday Modules Active" : "🌐 10 Sovereign Modules Active"}
+          <span className="bg-[#080E18] px-2.5 py-1 rounded-sm border border-[#1E293B] text-[#BAC7D5]">
+            {dashboardViewMode === "trader" ? "4 Intraday Modules Active" : "10 Sovereign Modules Active"}
           </span>
           {dashboardViewMode === "trader" && (
-            <span className="text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-500/30 font-medium">
-              Ultra-Lightweight
+            <span className="text-emerald-400 bg-emerald-950/40 px-2 py-1 rounded-sm border border-emerald-500/30 font-medium">
+              Lightweight
             </span>
           )}
         </div>
@@ -355,7 +355,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
           {/* Trader Mode Switch to Full Macro Prompt Card */}
           <motion.div
             variants={activeCardVariants}
-            className="p-4 rounded-xl border border-[#B08D57]/30 bg-[#0e1726]/80 flex flex-wrap items-center justify-between gap-3 text-xs font-mono-data shadow-md"
+            className="p-3.5 rounded-sm border border-[#1E293B] bg-[#0E1624] flex flex-wrap items-center justify-between gap-3 text-xs font-mono-data"
           >
             <div className="flex items-center gap-3">
               <Globe className="w-4 h-4 text-[#B08D57]" />
@@ -368,7 +368,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
             </div>
             <button
               onClick={() => handleViewModeChange("macro")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider bg-[#B08D57] hover:bg-[#C9A46D] text-[#0A111C] transition-all cursor-pointer shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] uppercase font-bold tracking-wider bg-[#B08D57] hover:bg-[#C9A46D] text-[#0A111C] transition-all cursor-pointer active:scale-95"
             >
               <span>Switch to Macro Mode</span>
               <ArrowRight className="w-3 h-3" />
@@ -435,13 +435,13 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
               </div>
 
               {/* Switcher between XAU/USD Supercycle and GPR 24M Chart */}
-              <div className="flex items-center bg-black/80 p-1 rounded-lg border border-[#B08D57]/30 text-[10px] font-mono-data shadow-inner">
+              <div className="flex items-center bg-[#080E18] p-0.5 rounded-sm border border-[#1E293B] text-[10px] font-mono-data">
                 <button
                   id="macro-chart-gold-tab"
                   onClick={() => setActiveMacroChart("gold")}
-                  className={`px-3 py-1.5 rounded transition-all uppercase font-medium flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-sm transition-all uppercase font-semibold flex items-center gap-1.5 ${
                     activeMacroChart === "gold"
-                      ? "bg-[#B08D57] text-[#0A111C] font-bold shadow-md"
+                      ? "bg-[#B08D57] text-[#0A111C] font-bold"
                       : "text-[#BAC7D5] hover:text-[#FBF8F1] hover:bg-white/5"
                   }`}
                 >
@@ -452,9 +452,9 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
                 <button
                   id="macro-chart-gpr-tab"
                   onClick={() => setActiveMacroChart("gpr")}
-                  className={`px-3 py-1.5 rounded transition-all uppercase font-medium flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-sm transition-all uppercase font-semibold flex items-center gap-1.5 ${
                     activeMacroChart === "gpr"
-                      ? "bg-[#A6291C] text-[#EDE9DE] font-bold shadow-md"
+                      ? "bg-[#A6291C] text-[#EDE9DE] font-bold"
                       : "text-[#BAC7D5] hover:text-[#FFA4A4] hover:bg-white/5"
                   }`}
                 >
@@ -493,14 +493,14 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
           {/* Terminal Access Tier Clearance Status Strip */}
           <motion.div
             variants={activeCardVariants}
-            className={`p-3.5 sm:p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 text-xs font-mono-data shadow-md ${
+            className={`p-3 sm:p-3.5 rounded-sm border flex flex-wrap items-center justify-between gap-3 text-xs font-mono-data ${
               isFounding
-                ? "bg-[#16130E] border-[#B08D57]/50"
+                ? "bg-[#0E1624] border-[#B08D57]/50"
                 : isSovereign
-                ? "bg-[#150F22] border-[#C084FC]/50"
+                ? "bg-[#0E1624] border-[#C084FC]/50"
                 : isInstitutional
-                ? "bg-[#0E1C2B] border-[#38BDF8]/50"
-                : "bg-[#0B121E] border-[#4E6178]/50"
+                ? "bg-[#0E1624] border-[#38BDF8]/50"
+                : "bg-[#0E1624] border-[#1E293B]"
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -516,14 +516,14 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-[#8292A6] uppercase tracking-wider">Active Clearance Level:</span>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-sm border ${
                     isFounding
                       ? "bg-[#B08D57]/20 border-[#B08D57]/60 text-[#E5C794]"
                       : isSovereign
                       ? "bg-[#C084FC]/20 border-[#C084FC]/60 text-[#E9D5FF]"
                       : isInstitutional
                       ? "bg-[#38BDF8]/20 border-[#38BDF8]/60 text-[#7DD3FC]"
-                      : "bg-[#4E6178]/20 border-[#4E6178]/60 text-[#BAC7D5]"
+                      : "bg-[#1E293B] border-[#334155] text-[#BAC7D5]"
                   }`}>
                     {isFounding ? "Founding Member (Lifetime All-Access)" : currentTier}
                   </span>
@@ -544,7 +544,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
               <button
                 id="open-tier-modal-from-grid-btn"
                 onClick={onOpenTierModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider font-bold bg-[#141E2F] hover:bg-[#1C2B44] text-[#EDE9DE] border border-[#B08D57]/40 hover:border-[#B08D57] transition-all cursor-pointer shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] uppercase tracking-wider font-bold bg-[#111A28] hover:bg-[#182336] text-[#EDE9DE] border border-[#1E293B] hover:border-[#B08D57] transition-all cursor-pointer active:scale-95"
               >
                 <Layers className="w-3.5 h-3.5 text-[#B08D57]" />
                 <span>Switch Test Tier</span>
@@ -554,7 +554,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
           </motion.div>
 
           {/* Institutional Macro Intelligence Engines Grid */}
-          <div id="engines-macro-grid" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start bg-[#0a121d]/40 p-1 sm:p-2 rounded-xl">
+          <div id="engines-macro-grid" className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start bg-[#080E18]/60 p-1 sm:p-2 rounded-sm border border-[#1E293B]">
             {/* Engine 1: US-Yen Intervention Dynamics */}
             <motion.div variants={activeCardVariants} className="flex flex-col">
               <div className="flex items-center justify-between px-2 py-1 mb-1 text-[9.5px] font-mono-data text-[#8292A6]">
@@ -632,7 +632,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
               <Suspense fallback={<WidgetFallback label="Iran Shadow Fleet AIS Tracking" minHeight="280px" />}>
                 <IranShadowFleetEngine
                   data={macroData.engines.iranShadowFleet}
-                  brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
+                  brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 76.85}
                   onExpandToggle={() => setExpandedEngine("shadowFleet")}
                   isExpanded={expandedEngine === "shadowFleet"}
                 />
@@ -642,7 +642,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
 
           {/* Sovereign Liquidity Architecture (Near Bottom of Dashboards Area) */}
           <motion.div variants={activeCardVariants} className="space-y-6 pt-2">
-            <div className="flex items-center justify-between px-2 py-1 text-[9.5px] font-mono-data text-[#8292A6] border-b border-[#B08D57]/20 pb-2">
+            <div className="flex items-center justify-between px-2 py-1 text-[9.5px] font-mono-data text-[#8292A6] border-b border-[#1E293B] pb-2">
               <span className="flex items-center gap-1.5 text-[#E5C794] font-bold tracking-wider uppercase">
                 <DollarSign className="w-3.5 h-3.5 text-[#B08D57]" />
                 <span>SOVEREIGN LIQUIDITY ARCHITECTURE // TRANSMISSION DESK</span>
@@ -671,12 +671,12 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
       {expandedEngine && (
         <div
           id="engine-fullscreen-backdrop"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#0E1A2B]/95 backdrop-blur-md animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#080E18]/95 backdrop-blur-md animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) setExpandedEngine(null);
           }}
         >
-          <div className="w-full max-w-6xl bg-[#13161C] border border-[#B08D57]/50 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] p-3 sm:p-5 max-h-[94vh] overflow-y-auto overflow-x-hidden relative">
+          <div className="w-full max-w-6xl bg-[#0E1624] border border-[#1E293B] rounded-sm p-3 sm:p-5 max-h-[94vh] overflow-y-auto overflow-x-hidden relative">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#B08D57]/20">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono-data uppercase tracking-widest text-[#B08D57] font-bold">
@@ -724,7 +724,7 @@ const DashboardGridComponent: React.FC<DashboardGridProps> = ({
                 <Suspense fallback={<WidgetFallback label="Shadow Fleet Expanded View" minHeight="360px" />}>
                   <IranShadowFleetEngine
                     data={macroData.engines.iranShadowFleet}
-                    brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 100.04}
+                    brentPrice={macroData.tickers.find(t => t.symbol === "BRENT")?.price ?? 76.85}
                     onExpandToggle={() => setExpandedEngine(null)}
                     isExpanded={true}
                   />

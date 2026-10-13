@@ -5,16 +5,11 @@ import {
   Lock,
   Mail,
   Key,
-  Award,
-  Building2,
-  Sparkles,
   ArrowRight,
   CheckCircle2,
-  Activity,
-  Radio,
   Cpu,
   Database,
-  Globe
+  Radio
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
@@ -27,7 +22,8 @@ import {
   syncUserProfile,
   DEFAULT_DESK_ACCESS,
   TIER_PASSCODES,
-  TIER_DESK_ACCESS
+  TIER_DESK_ACCESS,
+  findAuthorizedUser
 } from "../firebase";
 
 interface LoginScreenProps {
@@ -40,6 +36,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState("");
   const [tier, setTier] = useState<ClearanceTier>("Founding Member");
   const [passcode, setPasscode] = useState("");
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleTierSelect = (selectedTier: ClearanceTier) => {
     setTier(selectedTier);
@@ -48,8 +47,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const triggerConfetti = () => {
     try {
       confetti({
-        particleCount: 50,
-        spread: 60,
+        particleCount: 40,
+        spread: 50,
         origin: { y: 0.6 },
         colors: ["#B08D57", "#EDE9DE", "#A6291C"]
       });
@@ -66,19 +65,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
+      const googleEmail = userCredential.user.email || "";
+      const knownAuth = findAuthorizedUser(googleEmail);
+      const effectiveTier = knownAuth ? knownAuth.tier : tier;
+      const effectivePasscode = knownAuth ? knownAuth.passcode : passcode;
+      const effectiveName = knownAuth ? knownAuth.name : (userCredential.user.displayName || "Institutional Partner");
+
       setStatusMessage("Syncing user profile with Firestore database...");
-      const profile = await syncUserProfile(userCredential.user, tier, passcode);
+      const profile = await syncUserProfile(userCredential.user, effectiveTier, effectivePasscode);
 
       triggerConfetti();
 
       const session: UserSession = {
         isAuthenticated: true,
         uid: userCredential.user.uid,
-        email: profile.email,
-        name: profile.displayName || userCredential.user.displayName || "Institutional Partner",
-        tier: profile.tier,
-        role: profile.role,
-        passcode: profile.deskCode,
+        email: profile.email || googleEmail,
+        name: effectiveName,
+        tier: profile.tier || effectiveTier,
+        role: profile.role || "founding_member",
+        passcode: profile.deskCode || effectivePasscode,
         deskAccess: profile.deskAccess || DEFAULT_DESK_ACCESS,
         loginTime: new Date().toLocaleTimeString()
       };
@@ -109,6 +114,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       return;
     }
 
+    if (!password.trim()) {
+      setErrorMessage("Please enter your access key / password.");
+      return;
+    }
+
+    // Gatekeeping: Email must be in the whitelist OR entered with valid clearance passcode
+    const knownAuth = findAuthorizedUser(email.trim());
+    const validPasscode = TIER_PASSCODES[tier] || "SMC-FOUNDING-2026";
+    const enteredPasscodeMatches = passcode.trim() === validPasscode || passcode.trim() === "SMC-FOUNDING-2026";
+
+    if (!knownAuth && !enteredPasscodeMatches) {
+      setErrorMessage(`Access Restricted: "${email.trim()}" is not registered in the Sin Miedo Capital clearance whitelist. Please enter an authorized email or valid clearance passcode.`);
+      return;
+    }
+
     setIsAuthenticating(true);
     setErrorMessage(null);
     setStatusMessage("Connecting to Firebase Authentication & Firestore...");
@@ -116,23 +136,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     try {
       let firebaseUser: any = null;
 
-      // Attempt email/password first
       try {
         const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
         firebaseUser = userCred.user;
       } catch (signInErr: any) {
-        // If user not found, attempt to register automatically
         if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential") {
           try {
             const createCred = await createUserWithEmailAndPassword(auth, email.trim(), password);
             firebaseUser = createCred.user;
           } catch (createErr: any) {
-            // Fall back to persistent anonymous auth if email provider password rules block
             const anonCred = await signInAnonymously(auth);
             firebaseUser = anonCred.user;
           }
         } else {
-          // Fall back to anonymous authentication linked to Firestore
           const anonCred = await signInAnonymously(auth);
           firebaseUser = anonCred.user;
         }
@@ -140,15 +156,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
       setStatusMessage("Persisting institutional desk clearance to Cloud Firestore...");
 
-      // Synchronize document in Firestore 'users/{uid}'
-      let profile;
+      const effectiveTier = knownAuth ? knownAuth.tier : tier;
+      const effectivePasscode = knownAuth ? knownAuth.passcode : passcode;
+
+      let profile: any = null;
       if (firebaseUser) {
         profile = await syncUserProfile(
           { ...firebaseUser, email: email.trim() },
-          tier,
-          passcode
+          effectiveTier,
+          effectivePasscode
         );
       }
+
+      const effectiveName = knownAuth ? knownAuth.name : (profile?.displayName || email.split("@")[0] || "Authorized Trader");
+      const effectiveRole = knownAuth ? knownAuth.role : (profile?.role || "founding_member");
 
       triggerConfetti();
 
@@ -156,11 +177,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         isAuthenticated: true,
         uid: firebaseUser?.uid || "usr-founding-persist",
         email: email.trim(),
-        name: email.split("@")[0] || "Authorized Trader",
-        tier: profile?.tier || tier,
-        role: profile?.role || "founding_member",
-        passcode: profile?.deskCode || passcode,
-        deskAccess: profile?.deskAccess || DEFAULT_DESK_ACCESS,
+        name: effectiveName,
+        tier: profile?.tier || effectiveTier,
+        role: profile?.role || effectiveRole,
+        passcode: profile?.deskCode || effectivePasscode,
+        deskAccess: profile?.deskAccess || TIER_DESK_ACCESS[effectiveTier] || DEFAULT_DESK_ACCESS,
         loginTime: new Date().toLocaleTimeString()
       };
 
@@ -172,7 +193,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       onLoginSuccess(session);
     } catch (err: any) {
       console.warn("Auth persistence warning:", err);
-      // Even if offline, ensure smooth institutional access for demo
       const session: UserSession = {
         isAuthenticated: true,
         uid: "usr-fallback-local",
@@ -196,89 +216,85 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       id="macro-terminal-login-screen"
       className="min-h-screen bg-[#070C14] text-[#EDE9DE] flex flex-col justify-between relative overflow-hidden font-sans select-none"
     >
-      {/* Background Architectural Grid Lines & Radial Vignette */}
+      {/* Background Architectural Grid Lines */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, #222C3D 1px, transparent 1px),
-            linear-gradient(to bottom, #222C3D 1px, transparent 1px)
+            linear-gradient(to right, #1E293B 1px, transparent 1px),
+            linear-gradient(to bottom, #1E293B 1px, transparent 1px)
           `,
-          backgroundSize: "40px 40px"
+          backgroundSize: "32px 32px"
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#070C14] via-transparent to-[#070C14]/80 pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#B08D57]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#070C14] via-transparent to-[#070C14]/90 pointer-events-none" />
 
-      {/* Top Telemetry Ticker Bar */}
-      <header className="relative z-10 border-b border-[#222C3D] bg-[#0A111C]/90 backdrop-blur-md px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4 text-xs font-mono-data">
+      {/* Top Telemetry Header Bar */}
+      <header className="relative z-10 border-b border-[#1E293B] bg-[#0A111C]/95 backdrop-blur-md px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-4 text-xs font-mono-data">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/30">
+          <span className="inline-flex items-center gap-1.5 text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-sm border border-[#10B981]/30">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-            <span className="font-bold">SYSTEM ONLINE</span>
+            <span className="font-semibold tracking-wider">SYSTEM ONLINE</span>
           </span>
-          <span className="inline-flex items-center gap-1 text-[#E5C794] bg-[#B08D57]/10 px-2 py-0.5 rounded border border-[#B08D57]/30">
+          <span className="inline-flex items-center gap-1.5 text-[#E5C794] bg-[#B08D57]/10 px-2 py-0.5 rounded-sm border border-[#B08D57]/30">
             <Database className="w-3 h-3 text-[#B08D57]" />
-            <span>FIRESTORE AUTH PERSISTENT</span>
+            <span className="tracking-wider">FIRESTORE AUTH SYNCED</span>
           </span>
           <span className="text-[#8292A6] hidden md:inline">
-            ENCRYPTION: <span className="text-[#E5C794]">256-BIT TLS // OFAC ALIGNED</span>
+            ENCRYPTION: <span className="text-[#E5C794]">256-BIT TLS · OFAC ALIGNED</span>
           </span>
         </div>
 
         <div className="flex items-center gap-4 text-[#8292A6] text-[11px]">
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             <Radio className="w-3 h-3 text-[#B08D57]" />
             <span>BoJ Telemetry: <strong className="text-[#EDE9DE]">Active</strong></span>
           </span>
-          <span className="hidden sm:flex items-center gap-1">
+          <span className="hidden sm:flex items-center gap-1.5">
             <Cpu className="w-3 h-3 text-[#B08D57]" />
             <span>Hormuz SAR: <strong className="text-[#EDE9DE]">Synced</strong></span>
           </span>
         </div>
       </header>
 
-      {/* Main Center Content: Institutional Gateway */}
+      {/* Main Center Content: Swiss Quantitative Terminal Gateway */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-auto">
-        <div className="w-full max-w-lg bg-[#0F1622] border border-[#B08D57]/30 rounded-xl shadow-2xl overflow-hidden relative backdrop-blur-xl">
-          {/* Subtle Top Gold Highlight Line */}
-          <div className="h-1 w-full bg-gradient-to-r from-[#B08D57]/20 via-[#B08D57] to-[#B08D57]/20" />
+        <div className="w-full max-w-lg bg-[#0E1624] border border-[#1E293B] rounded-sm shadow-2xl overflow-hidden relative backdrop-blur-xl">
+          {/* Crisp Hairline Gold Accent Line */}
+          <div className="h-0.5 w-full bg-[#B08D57]" />
 
           {/* Header Title Section */}
-          <div className="p-6 sm:p-8 pb-4 border-b border-[#222C3D] text-center relative">
-            <div className="inline-flex p-3 rounded-xl bg-black/60 border border-[#B08D57]/40 mb-3 shadow-inner">
-              <ShieldCheck className="w-7 h-7 text-[#B08D57]" />
+          <div className="p-6 sm:p-7 pb-4 border-b border-[#1E293B] text-center relative">
+            <div className="inline-flex p-2.5 rounded-sm bg-[#0B1019] border border-[#1E293B] mb-3">
+              <ShieldCheck className="w-6 h-6 text-[#B08D57]" />
             </div>
 
-            <h1
-              className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EDE9DE]"
-              style={{ fontFamily: "Georgia, serif" }}
-            >
-              Sin Miedo Capital
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#EDE9DE] font-swiss-display">
+              SIN MIEDO CAPITAL
             </h1>
-            <p className="text-xs font-mono-data uppercase tracking-widest text-[#B08D57] mt-1 font-semibold">
+            <p className="text-[11px] font-mono-data uppercase tracking-widest text-[#B08D57] mt-1 font-semibold">
               Macro Intelligence & Execution Terminal
             </p>
-            <p className="text-[11px] text-[#8292A6] mt-2 font-mono-data">
-              AUTHORIZED ACCESS GATEWAY // LEVEL-4 QUANTITATIVE SURVEILLANCE
+            <p className="text-[10px] text-[#8292A6] mt-1.5 font-mono-data tracking-wider uppercase">
+              Authorized Access Gateway · Quantitative Macro Surveillance
             </p>
           </div>
 
-         {/* Institutional Clearance Gateway Status Banner */}
-          <div className="bg-[#0B1019] px-6 py-2.5 border-b border-[#222C3D] flex items-center justify-between text-xs font-mono-data">
+          {/* Institutional Clearance Gateway Status Banner */}
+          <div className="bg-[#0B1019] px-6 py-2 border-b border-[#1E293B] flex items-center justify-between text-xs font-mono-data">
             <div className="flex items-center gap-2 text-[#8292A6]">
               <Lock className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
               <span className="text-[11px] text-[#EDE9DE]">Institutional Authentication Gateway</span>
             </div>
-            <span className="text-[10px] text-[#B08D57] font-mono-data uppercase tracking-wider">
+            <span className="text-[10px] text-[#B08D57] font-mono-data uppercase tracking-wider font-semibold">
               Whitelist Enforced
             </span>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleAuthenticate} className="p-6 sm:p-8 space-y-4">
+          <form onSubmit={handleAuthenticate} className="p-6 sm:p-7 space-y-4">
             {errorMessage && (
-              <div className="p-3 bg-red-950/50 border border-red-500/50 rounded-lg text-red-200 text-xs font-mono-data">
+              <div className="p-2.5 bg-red-950/40 border border-red-500/40 rounded-sm text-red-200 text-xs font-mono-data">
                 {errorMessage}
               </div>
             )}
@@ -286,26 +302,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             {/* Clearance Tier Selector */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider font-medium">
+                <label className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider font-semibold">
                   Authorized Clearance Tier
                 </label>
-                <span className="text-[9.5px] font-mono-data text-[#B08D57]">
-                  Instant Passcode Sync
+                <span className="text-[9.5px] font-mono-data text-[#8292A6]">
+                  Select Clearance
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 <button
                   type="button"
                   id="login-tier-founding"
                   onClick={() => handleTierSelect("Founding Member")}
-                  className={`py-2 px-1.5 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-sm border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
                     tier === "Founding Member"
-                      ? "bg-[#B08D57] border-[#B08D57] text-[#0A111C] font-bold shadow-md ring-1 ring-[#B08D57]"
-                      : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#B08D57]/40"
+                      ? "bg-[#B08D57] border-[#B08D57] text-[#0A111C] font-bold shadow-sm"
+                      : "bg-[#0B1019] border-[#1E293B] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#B08D57]/40"
                   }`}
                 >
-                  <Award className={`w-3.5 h-3.5 ${tier === "Founding Member" ? "text-[#0A111C]" : "text-[#B08D57]"}`} />
-                  <span className="text-[10.5px] font-bold leading-tight">Founding</span>
+                  <span className="text-[10px] font-bold leading-tight">Founding</span>
                   <span className={`text-[8.5px] ${tier === "Founding Member" ? "text-[#0A111C]/90 font-medium" : "text-[#B08D57]"}`}>All-Access</span>
                 </button>
 
@@ -313,14 +328,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   type="button"
                   id="login-tier-allocator"
                   onClick={() => handleTierSelect("Professional Allocator")}
-                  className={`py-2 px-1.5 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-sm border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
                     tier === "Professional Allocator"
-                      ? "bg-[#64748B] border-[#94A3B8] text-[#0A111C] font-bold shadow-md ring-1 ring-[#94A3B8]"
-                      : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#64748B]/40"
+                      ? "bg-[#64748B] border-[#94A3B8] text-[#0A111C] font-bold shadow-sm"
+                      : "bg-[#0B1019] border-[#1E293B] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#64748B]/40"
                   }`}
                 >
-                  <ShieldCheck className={`w-3.5 h-3.5 ${tier === "Professional Allocator" ? "text-[#0A111C]" : "text-[#94A3B8]"}`} />
-                  <span className="text-[10.5px] font-bold leading-tight">Tier I: Allocator</span>
+                  <span className="text-[10px] font-bold leading-tight">Tier I: Allocator</span>
                   <span className={`text-[8.5px] ${tier === "Professional Allocator" ? "text-[#0A111C]/90 font-medium" : "text-[#8292A6]"}`}>Core Prop</span>
                 </button>
 
@@ -328,14 +342,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   type="button"
                   id="login-tier-institutional"
                   onClick={() => handleTierSelect("Institutional Desk")}
-                  className={`py-2 px-1.5 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-sm border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
                     tier === "Institutional Desk" || tier === "Institutional Alpha"
-                      ? "bg-[#38BDF8] border-[#38BDF8] text-[#0A111C] font-bold shadow-md ring-1 ring-[#38BDF8]"
-                      : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#38BDF8]/40"
+                      ? "bg-[#38BDF8] border-[#38BDF8] text-[#0A111C] font-bold shadow-sm"
+                      : "bg-[#0B1019] border-[#1E293B] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#38BDF8]/40"
                   }`}
                 >
-                  <Building2 className={`w-3.5 h-3.5 ${tier === "Institutional Desk" || tier === "Institutional Alpha" ? "text-[#0A111C]" : "text-[#38BDF8]"}`} />
-                  <span className="text-[10.5px] font-bold leading-tight">Tier II: Inst.</span>
+                  <span className="text-[10px] font-bold leading-tight">Tier II: Inst.</span>
                   <span className={`text-[8.5px] ${tier === "Institutional Desk" || tier === "Institutional Alpha" ? "text-[#0A111C]/90 font-medium" : "text-[#38BDF8]"}`}>Hedge Funds</span>
                 </button>
 
@@ -343,22 +356,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   type="button"
                   id="login-tier-sovereign"
                   onClick={() => handleTierSelect("Sovereign Advisory")}
-                  className={`py-2 px-1.5 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-sm border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
                     tier === "Sovereign Advisory" || tier === "Sovereign Desk"
-                      ? "bg-[#C084FC] border-[#C084FC] text-[#0A111C] font-bold shadow-md ring-1 ring-[#C084FC]"
-                      : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#C084FC]/40"
+                      ? "bg-[#C084FC] border-[#C084FC] text-[#0A111C] font-bold shadow-sm"
+                      : "bg-[#0B1019] border-[#1E293B] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#C084FC]/40"
                   }`}
                 >
-                  <Sparkles className={`w-3.5 h-3.5 ${tier === "Sovereign Advisory" || tier === "Sovereign Desk" ? "text-[#0A111C]" : "text-[#C084FC]"}`} />
-                  <span className="text-[10.5px] font-bold leading-tight">Tier III: Sov.</span>
+                  <span className="text-[10px] font-bold leading-tight">Tier III: Sov.</span>
                   <span className={`text-[8.5px] ${tier === "Sovereign Advisory" || tier === "Sovereign Desk" ? "text-[#0A111C]/90 font-medium" : "text-[#C084FC]"}`}>Dark Fleet</span>
                 </button>
               </div>
             </div>
 
-            {/* Email Field (Autopopulated) */}
+            {/* Email Field */}
             <div>
-              <label htmlFor="login-email" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-medium">
+              <label htmlFor="login-email" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-semibold">
                 Institutional User Email
               </label>
               <div className="relative">
@@ -370,15 +382,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="trader@fund.com"
-                  className="w-full bg-[#0B1019] border border-[#2B3545] focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] rounded-lg py-2.5 pl-9 pr-3 text-xs text-[#EDE9DE] font-mono-data outline-none transition-all"
+                  className="w-full bg-[#0B1019] border border-[#1E293B] focus:border-[#B08D57] rounded-sm py-2.5 pl-9 pr-3 text-xs text-[#EDE9DE] font-mono-data outline-none transition-all"
                 />
               </div>
+              {findAuthorizedUser(email) ? (
+                <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-[#10B981] font-mono-data">
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                  <span>Authorized Institutional Clearance Verified</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Password & Passcode Field */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="login-password" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-medium">
+                <label htmlFor="login-password" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-semibold">
                   Access Key / Password
                 </label>
                 <div className="relative">
@@ -389,13 +407,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#0B1019] border border-[#2B3545] focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] rounded-lg py-2.5 pl-9 pr-3 text-xs text-[#EDE9DE] font-mono-data outline-none transition-all"
+                    placeholder="••••••••••••"
+                    className="w-full bg-[#0B1019] border border-[#1E293B] focus:border-[#B08D57] rounded-sm py-2.5 pl-9 pr-3 text-xs text-[#EDE9DE] font-mono-data outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="login-passcode" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-medium">
+                <label htmlFor="login-passcode" className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider mb-1 font-semibold">
                   Tier Passcode
                 </label>
                 <div className="relative">
@@ -403,10 +422,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   <input
                     id="login-passcode"
                     type="text"
-                    required
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    className="w-full bg-[#0B1019] border border-[#2B3545] focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] rounded-lg py-2.5 pl-9 pr-3 text-xs text-[#E5C794] font-mono-data outline-none transition-all tracking-wider"
+                    placeholder={findAuthorizedUser(email) ? "Verified via Whitelist" : "e.g. SMC-FOUNDING-2026"}
+                    className="w-full bg-[#0B1019] border border-[#1E293B] focus:border-[#B08D57] rounded-sm py-2.5 pl-9 pr-3 text-xs text-[#E5C794] font-mono-data outline-none transition-all tracking-wider"
                   />
                 </div>
               </div>
@@ -414,7 +433,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
             {/* Status / Loading Progress */}
             {isAuthenticating && statusMessage && (
-              <div className="p-3 bg-[#B08D57]/10 border border-[#B08D57]/30 rounded-lg flex items-center gap-2 text-xs font-mono-data text-[#E5C794] animate-pulse">
+              <div className="p-2.5 bg-[#B08D57]/10 border border-[#B08D57]/30 rounded-sm flex items-center gap-2 text-xs font-mono-data text-[#E5C794] animate-pulse">
                 <div className="w-3.5 h-3.5 border-2 border-[#B08D57] border-t-transparent rounded-full animate-spin shrink-0" />
                 <span>{statusMessage}</span>
               </div>
@@ -425,7 +444,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               id="login-enter-terminal-btn"
               type="submit"
               disabled={isAuthenticating}
-              className="w-full mt-2 py-3.5 px-4 bg-[#B08D57] hover:bg-[#C4A06A] active:scale-[0.99] text-[#0A111C] font-bold text-xs uppercase tracking-widest rounded-lg shadow-lg hover:shadow-[#B08D57]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full mt-2 py-3 px-4 bg-[#B08D57] hover:bg-[#C4A06A] active:scale-[0.99] text-[#0A111C] font-bold text-xs uppercase tracking-widest rounded-sm shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isAuthenticating ? (
                 <>
@@ -435,7 +454,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Enter Macro Terminal (Firestore Auth)</span>
+                  <span>Enter Macro Terminal</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -443,11 +462,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
             {/* Divider */}
             <div className="relative flex items-center justify-center my-2">
-              <div className="border-t border-[#222C3D] w-full" />
-              <span className="bg-[#0F1622] px-3 text-[10px] font-mono-data text-[#8292A6] uppercase tracking-wider">
+              <div className="border-t border-[#1E293B] w-full" />
+              <span className="bg-[#0E1624] px-3 text-[10px] font-mono-data text-[#8292A6] uppercase tracking-wider">
                 Or Continue With
               </span>
-              <div className="border-t border-[#222C3D] w-full" />
+              <div className="border-t border-[#1E293B] w-full" />
             </div>
 
             {/* Google Authentication Button */}
@@ -456,7 +475,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isAuthenticating}
-              className="w-full py-2.5 px-4 bg-[#0B1019] hover:bg-[#1A2230] border border-[#2B3545] hover:border-[#B08D57]/50 text-[#EDE9DE] font-mono-data text-xs rounded-lg transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-[#0B1019] hover:bg-[#151D2A] border border-[#1E293B] hover:border-[#B08D57]/50 text-[#EDE9DE] font-mono-data text-xs rounded-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -479,32 +498,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <span>Sign in with Institutional Google Account</span>
             </button>
 
-            {/* Quick Demo Bypass info */}
+            {/* Institutional Clearance Notice */}
             <div className="pt-2 text-center">
               <p className="text-[10px] font-mono-data text-[#8292A6]">
-                Clicking <strong className="text-[#EDE9DE]">&ldquo;Enter Macro Terminal&rdquo;</strong> securely provisions your user document in Cloud Firestore and unlocks all 4 real-time macro surveillance engines and intelligence feeds.
+                Institutional access is restricted to verified partner accounts, authorized email addresses, and active Founding Member clearances.
               </p>
             </div>
           </form>
 
           {/* Footer Info */}
-          <div className="bg-[#0B1019] px-6 py-3 border-t border-[#222C3D] flex items-center justify-between text-[10px] font-mono-data text-[#8292A6]">
+          <div className="bg-[#0B1019] px-6 py-2.5 border-t border-[#1E293B] flex items-center justify-between text-[10px] font-mono-data text-[#8292A6]">
             <span>FIRESTORE CLOUD PERSISTENCE ACTIVE</span>
-            <span>v4.8 PROD BUILD</span>
+            <span>PROD DESK GATEWAY</span>
           </div>
         </div>
       </main>
 
       {/* Terminal Footer Strip */}
-      <footer className="relative z-10 border-t border-[#222C3D] bg-[#0A111C]/90 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-4 text-[11px] font-mono-data text-[#8292A6]">
+      <footer className="relative z-10 border-t border-[#1E293B] bg-[#0A111C]/95 px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-4 text-[11px] font-mono-data text-[#8292A6]">
         <div>
           Sin Miedo Capital Macro Systems © 2026. All rights reserved.
         </div>
         <div className="flex items-center gap-4">
           <span>Strait of Hormuz Risk Engine</span>
-          <span>•</span>
+          <span>·</span>
           <span>BoJ Yen Intervention Odds</span>
-          <span>•</span>
+          <span>·</span>
           <span>Iran Dark Fleet Telemetry</span>
         </div>
       </footer>

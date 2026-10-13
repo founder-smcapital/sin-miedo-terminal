@@ -267,16 +267,16 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
       // Fallback 1D curve with simulated MES and MNQ curves
       return [
         { time: "01:00", dxy: 102.08, mclResistanceCap: 91.35, mesPrice: 7726.50, mesChangePct: -0.36, mnqPrice: 29590.00, mnqChangePct: -0.34, isPremarket: true },
-        { time: "03:00", dxy: 102.12, mclResistanceCap: 91.28, mesPrice: 7724.25, mesChangePct: -0.39, mnqPrice: 29575.00, mnqChangePct: -0.39, isPremarket: true },
-        { time: "04:30", dxy: 102.24, mclResistanceCap: 91.05, mesPrice: 7718.00, mesChangePct: -0.47, mnqPrice: 29540.00, mnqChangePct: -0.51, isPremarket: true },
-        { time: "06:00", dxy: 102.31, mclResistanceCap: 90.92, mesPrice: 7714.50, mesChangePct: -0.52, mnqPrice: 29515.00, mnqChangePct: -0.59, isPremarket: true },
-        { time: "07:30", dxy: 102.28, mclResistanceCap: 90.98, mesPrice: 7716.25, mesChangePct: -0.49, mnqPrice: 29530.00, mnqChangePct: -0.54, isPremarket: true },
-        { time: "08:30", dxy: 102.20, mclResistanceCap: 91.12, mesPrice: 7720.00, mesChangePct: -0.45, mnqPrice: 29550.00, mnqChangePct: -0.47, isPremarket: true },
-        { time: "09:30", dxy: 102.14, mclResistanceCap: 91.25, mesPrice: 7723.75, mesChangePct: -0.40, mnqPrice: 29570.00, mnqChangePct: -0.40, isPremarket: false },
-        { time: "11:00", dxy: 102.09, mclResistanceCap: 91.34, mesPrice: 7725.50, mesChangePct: -0.38, mnqPrice: 29580.00, mnqChangePct: -0.37, isPremarket: false },
-        { time: "13:00", dxy: 102.02, mclResistanceCap: 91.46, mesPrice: 7728.00, mesChangePct: -0.34, mnqPrice: 29595.00, mnqChangePct: -0.32, isPremarket: false },
-        { time: "15:00", dxy: 102.05, mclResistanceCap: 91.40, mesPrice: 7726.00, mesChangePct: -0.37, mnqPrice: 29585.00, mnqChangePct: -0.35, isPremarket: false },
-        { time: "LIVE", dxy: currentPrice, mclResistanceCap: Number((91.50 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48, isPremarket: false }
+        { time: "03:00", dxy: 102.12, mclResistanceCap: 90.55, mesPrice: 7724.25, mesChangePct: -0.39, mnqPrice: 29575.00, mnqChangePct: -0.39, isPremarket: true },
+        { time: "04:30", dxy: 102.24, mclResistanceCap: 90.32, mesPrice: 7718.00, mesChangePct: -0.47, mnqPrice: 29540.00, mnqChangePct: -0.51, isPremarket: true },
+        { time: "06:00", dxy: 102.31, mclResistanceCap: 90.19, mesPrice: 7714.50, mesChangePct: -0.52, mnqPrice: 29515.00, mnqChangePct: -0.59, isPremarket: true },
+        { time: "07:30", dxy: 102.28, mclResistanceCap: 90.25, mesPrice: 7716.25, mesChangePct: -0.49, mnqPrice: 29530.00, mnqChangePct: -0.54, isPremarket: true },
+        { time: "08:30", dxy: 102.20, mclResistanceCap: 90.39, mesPrice: 7720.00, mesChangePct: -0.45, mnqPrice: 29550.00, mnqChangePct: -0.47, isPremarket: true },
+        { time: "09:30", dxy: 102.14, mclResistanceCap: 90.52, mesPrice: 7723.75, mesChangePct: -0.40, mnqPrice: 29570.00, mnqChangePct: -0.40, isPremarket: false },
+        { time: "11:00", dxy: 102.09, mclResistanceCap: 90.61, mesPrice: 7725.50, mesChangePct: -0.38, mnqPrice: 29580.00, mnqChangePct: -0.37, isPremarket: false },
+        { time: "13:00", dxy: 102.02, mclResistanceCap: 90.73, mesPrice: 7728.00, mesChangePct: -0.34, mnqPrice: 29595.00, mnqChangePct: -0.32, isPremarket: false },
+        { time: "15:00", dxy: 102.05, mclResistanceCap: 90.67, mesPrice: 7726.00, mesChangePct: -0.37, mnqPrice: 29585.00, mnqChangePct: -0.35, isPremarket: false },
+        { time: "LIVE", dxy: currentPrice, mclResistanceCap: Number((90.77 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48, isPremarket: false }
       ];
     }
 
@@ -285,7 +285,7 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
         return apiData.fiveDayPoints.map((pt, idx) => ({
           time: pt.minute,
           dxy: pt.price,
-          mclResistanceCap: Number((91.50 - ((pt.price - 102.00) * 1.85)).toFixed(2)),
+          mclResistanceCap: Number((90.77 - ((pt.price - 102.00) * 1.85)).toFixed(2)),
           mesPrice: Number((7722 - ((pt.price - 102.00) * 35)).toFixed(2)),
           mesChangePct: Number((-0.42 - ((pt.price - 102.00) * 0.45)).toFixed(2)),
           mnqPrice: Number((29565 - ((pt.price - 102.00) * 150)).toFixed(2)),
@@ -294,24 +294,24 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
         }));
       }
       return [
-        { time: "Wed 09:30", dxy: 101.42, mclResistanceCap: 92.55, mesPrice: 7668.00, mesChangePct: -1.12, mnqPrice: 29303.25, mnqChangePct: -1.30 },
-        { time: "Wed 16:00", dxy: 101.65, mclResistanceCap: 92.15, mesPrice: 7692.50, mesChangePct: -0.80, mnqPrice: 29540.00, mnqChangePct: -0.50 },
-        { time: "Thu 04:00", dxy: 101.80, mclResistanceCap: 91.85, mesPrice: 7705.00, mesChangePct: -0.64, mnqPrice: 29620.00, mnqChangePct: -0.24 },
-        { time: "Thu 16:00", dxy: 102.20, mclResistanceCap: 91.12, mesPrice: 7738.00, mesChangePct: -0.22, mnqPrice: 29950.00, mnqChangePct: 0.88 },
-        { time: "Fri 04:00", dxy: 102.35, mclResistanceCap: 90.85, mesPrice: 7748.25, mesChangePct: -0.08, mnqPrice: 30120.00, mnqChangePct: 1.45 },
-        { time: "Fri 16:00", dxy: 102.17, mclResistanceCap: 91.18, mesPrice: 7754.75, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
-        { time: "Mon 04:00", dxy: 102.05, mclResistanceCap: 91.40, mesPrice: 7728.50, mesChangePct: -0.34, mnqPrice: 29620.00, mnqChangePct: -0.24 },
-        { time: "LIVE", dxy: currentPrice, mclResistanceCap: Number((91.50 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
+        { time: "Wed 09:30", dxy: 101.42, mclResistanceCap: 91.82, mesPrice: 7668.00, mesChangePct: -1.12, mnqPrice: 29303.25, mnqChangePct: -1.30 },
+        { time: "Wed 16:00", dxy: 101.65, mclResistanceCap: 91.42, mesPrice: 7692.50, mesChangePct: -0.80, mnqPrice: 29540.00, mnqChangePct: -0.50 },
+        { time: "Thu 04:00", dxy: 101.80, mclResistanceCap: 91.12, mesPrice: 7705.00, mesChangePct: -0.64, mnqPrice: 29620.00, mnqChangePct: -0.24 },
+        { time: "Thu 16:00", dxy: 102.20, mclResistanceCap: 90.39, mesPrice: 7738.00, mesChangePct: -0.22, mnqPrice: 29950.00, mnqChangePct: 0.88 },
+        { time: "Fri 04:00", dxy: 102.35, mclResistanceCap: 90.12, mesPrice: 7748.25, mesChangePct: -0.08, mnqPrice: 30120.00, mnqChangePct: 1.45 },
+        { time: "Fri 16:00", dxy: 102.17, mclResistanceCap: 90.45, mesPrice: 7754.75, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
+        { time: "Mon 04:00", dxy: 102.05, mclResistanceCap: 90.67, mesPrice: 7728.50, mesChangePct: -0.34, mnqPrice: 29620.00, mnqChangePct: -0.24 },
+        { time: "LIVE", dxy: currentPrice, mclResistanceCap: Number((90.77 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
       ];
     }
 
     // 1M Macro Trajectory
     return [
-      { time: "W-4", dxy: 100.85, mclResistanceCap: 93.60, mesPrice: 7580.00, mesChangePct: -2.25, mnqPrice: 28950.00, mnqChangePct: -2.50 },
-      { time: "W-3", dxy: 101.20, mclResistanceCap: 92.95, mesPrice: 7620.00, mesChangePct: -1.74, mnqPrice: 29120.00, mnqChangePct: -1.93 },
-      { time: "W-2", dxy: 101.65, mclResistanceCap: 92.15, mesPrice: 7690.00, mesChangePct: -0.83, mnqPrice: 29480.00, mnqChangePct: -0.71 },
-      { time: "W-1", dxy: 102.40, mclResistanceCap: 90.75, mesPrice: 7755.00, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
-      { time: "NOW", dxy: currentPrice, mclResistanceCap: Number((91.50 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
+      { time: "W-4", dxy: 100.85, mclResistanceCap: 92.87, mesPrice: 7580.00, mesChangePct: -2.25, mnqPrice: 28950.00, mnqChangePct: -2.50 },
+      { time: "W-3", dxy: 101.20, mclResistanceCap: 92.22, mesPrice: 7620.00, mesChangePct: -1.74, mnqPrice: 29120.00, mnqChangePct: -1.93 },
+      { time: "W-2", dxy: 101.65, mclResistanceCap: 91.42, mesPrice: 7690.00, mesChangePct: -0.83, mnqPrice: 29480.00, mnqChangePct: -0.71 },
+      { time: "W-1", dxy: 102.40, mclResistanceCap: 90.02, mesPrice: 7755.00, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
+      { time: "NOW", dxy: currentPrice, mclResistanceCap: Number((90.77 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
     ];
   }, [timeframe, apiData, currentPrice]);
 
@@ -855,7 +855,7 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
 
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <span className="text-[10px] text-[#8292A6]">
-                Prop Firm Application:
+                Institutional Application:
               </span>
               <span className="text-[10px] px-2 py-1 rounded bg-[#B08D57]/15 text-[#E5C794] border border-[#B08D57]/30 font-bold">
                 {activeCard.type === "INVERSE" ? "Fade Rallies into Highs" : "Follow Breakout Flow"}

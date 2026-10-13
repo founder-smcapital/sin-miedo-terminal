@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav
       id="main-navigation-bar"
-      className="w-full max-w-full bg-[#0E1A2B] border-b border-[#B08D57]/20 sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 transition-all"
+      className="w-full max-w-full bg-[#0A111C] border-b border-[#1E293B] sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-2 transition-all"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
         {/* Left: Sin Miedo Capital Logo & Monogram */}
@@ -86,35 +86,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onTabChange("dashboards")}
           className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 cursor-pointer group select-none shrink-0"
         >
-          {/* Circular Monogram Crest */}
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#B08D57] flex items-center justify-center text-xs sm:text-sm italic font-serif text-[#B08D57] bg-[#1A1D24] shadow-md group-hover:border-[#C9A46D] transition-colors shrink-0">
+          {/* Monogram Crest */}
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-sm border border-[#B08D57] flex items-center justify-center text-xs sm:text-sm font-bold font-swiss-display text-[#B08D57] bg-[#111A28] shadow-sm group-hover:border-[#E5C794] transition-colors shrink-0">
             S
           </div>
 
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-base sm:text-lg lg:text-xl font-serif tracking-tight text-[#EDE9DE] group-hover:text-white transition-colors whitespace-nowrap" style={{ fontFamily: "Georgia, serif" }}>
+              <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-[#EDE9DE] group-hover:text-white transition-colors whitespace-nowrap font-swiss-display">
                 SIN MIEDO CAPITAL
               </span>
-              <span className="hidden 2xl:inline-block text-[8.5px] font-mono-data uppercase bg-black text-[#B08D57] px-1.5 py-0.5 rounded border border-[#B08D57]/30">
-                PORTAL v4.2
+              <span className="hidden 2xl:inline-block text-[8.5px] font-mono-data tracking-wider bg-[#0B1019] text-[#B08D57] px-1.5 py-0.5 rounded-sm border border-[#1E293B]">
+                TERMINAL
               </span>
             </div>
-            <span className="text-[8px] 2xl:text-[9px] uppercase font-mono-data tracking-[0.1em] 2xl:tracking-[0.16em] text-[#8292A6] hidden 2xl:block truncate">
-              MACRO FINANCE &amp; GEOPOLITICAL INTELLIGENCE
+            <span className="text-[8px] 2xl:text-[9px] uppercase font-mono-data tracking-[0.14em] text-[#8292A6] hidden 2xl:block truncate">
+              QUANTITATIVE MACRO &amp; SOVEREIGN INTELLIGENCE
             </span>
           </div>
         </div>
 
-        {/* Center: Primary Navigation Links (Displayed in top row on xl+ screens with proportional spacing) */}
-        <div id="primary-nav-links" className="hidden xl:flex items-center gap-0.5 2xl:gap-1 bg-black/50 p-0.5 2xl:p-1 rounded-lg border border-[#B08D57]/20 shrink-0">
+        {/* Center: Primary Navigation Links */}
+        <div id="primary-nav-links" className="hidden xl:flex items-center gap-0.5 bg-[#080E18] p-0.5 rounded-sm border border-[#1E293B] shrink-0">
           <button
             id="nav-dashboards-btn"
             onClick={() => onTabChange("dashboards")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "dashboards"
-                ? "bg-[#B08D57] text-[#0E1A2B] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#B08D57] text-[#0A111C] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
             <Compass className="w-3.5 h-3.5 shrink-0" />
@@ -124,27 +124,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="nav-intelligence-btn"
             onClick={() => onTabChange("intelligence")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "intelligence"
-                ? "bg-[#B08D57] text-[#0E1A2B] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#B08D57] text-[#0A111C] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
             <FileText className="w-3.5 h-3.5 shrink-0" />
             <span>Intelligence</span>
           </button>
 
-          {/* Pulse Live Tab with subtle signal dot */}
+          {/* Pulse Live Tab */}
           <button
             id="nav-pulse-btn"
             onClick={() => onTabChange("pulse")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap relative ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap relative ${
               activeTab === "pulse"
-                ? "bg-[#A6291C] text-[#EDE9DE] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#A6291C] text-[#EDE9DE] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF8585] shrink-0 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-none bg-[#FF8585] shrink-0" />
             <Radio className="w-3.5 h-3.5 shrink-0" />
             <span>Pulse</span>
           </button>
@@ -152,10 +152,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="nav-futures-btn"
             onClick={() => onTabChange("futures")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "futures"
-                ? "bg-[#B08D57] text-[#0E1A2B] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#B08D57] text-[#0A111C] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
             <Activity className="w-3.5 h-3.5 shrink-0" />
@@ -165,10 +165,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="nav-systems-btn"
             onClick={() => onTabChange("systems")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "systems"
-                ? "bg-[#B08D57] text-[#0E1A2B] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#B08D57] text-[#0A111C] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
             <Cpu className="w-3.5 h-3.5 shrink-0" />
@@ -178,10 +178,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="nav-support-btn"
             onClick={() => onTabChange("support")}
-            className={`px-2 2xl:px-2.5 py-1.5 rounded text-[10px] 2xl:text-[11px] uppercase tracking-[0.06em] 2xl:tracking-[0.1em] font-medium transition-all flex items-center gap-1 2xl:gap-1.5 whitespace-nowrap ${
+            className={`px-2.5 py-1.5 rounded-sm text-[10px] 2xl:text-[11px] uppercase tracking-wider font-semibold font-mono-data transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "support"
-                ? "bg-[#B08D57] text-[#0E1A2B] font-bold shadow-sm"
-                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#1A1D24]"
+                ? "bg-[#B08D57] text-[#0A111C] shadow-sm font-bold"
+                : "text-[#EDE9DE]/70 hover:text-[#B08D57] hover:bg-[#111A28]"
             }`}
           >
             <LifeBuoy className="w-3.5 h-3.5 shrink-0" />
@@ -195,13 +195,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onCurrencyChange && (
             <div
               id="navbar-currency-toggle"
-              className="flex items-center bg-black/60 rounded-lg p-0.5 border border-[#B08D57]/30 font-mono-data text-[10px] shrink-0"
+              className="flex items-center bg-[#080E18] rounded-sm p-0.5 border border-[#1E293B] font-mono-data text-[10px] shrink-0"
               title="Interchangeable Currency: Switch between US Dollar ($) and Euro (€)"
             >
               <button
                 id="currency-toggle-usd-btn"
                 onClick={() => onCurrencyChange("USD")}
-                className={`px-2 py-0.5 sm:py-1 rounded font-bold transition-all flex items-center gap-0.5 sm:gap-1 ${
+                className={`px-2 py-0.5 sm:py-1 rounded-sm font-bold transition-all flex items-center gap-0.5 sm:gap-1 ${
                   currency === "USD"
                     ? "bg-[#B08D57] text-[#0A111C] shadow-sm"
                     : "text-[#8292A6] hover:text-[#EDE9DE]"
@@ -213,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="currency-toggle-eur-btn"
                 onClick={() => onCurrencyChange("EUR")}
-                className={`px-2 py-0.5 sm:py-1 rounded font-bold transition-all flex items-center gap-0.5 sm:gap-1 ${
+                className={`px-2 py-0.5 sm:py-1 rounded-sm font-bold transition-all flex items-center gap-0.5 sm:gap-1 ${
                   currency === "EUR"
                     ? "bg-[#B08D57] text-[#0A111C] shadow-sm"
                     : "text-[#8292A6] hover:text-[#EDE9DE]"
@@ -229,13 +229,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="open-terminal-header-btn"
             onClick={onOpenTerminal}
-            className="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-wider bg-[#1A1D24] hover:bg-[#2A2E38] text-[#B08D57] px-2 sm:px-2.5 2xl:px-3 py-1 sm:py-1.5 rounded-lg border border-[#B08D57]/30 hover:border-[#B08D57] transition-all group font-mono-data shrink-0"
+            className="hidden sm:flex items-center gap-1.5 text-[10px] uppercase tracking-wider bg-[#111A28] hover:bg-[#182336] text-[#B08D57] px-2.5 2xl:px-3 py-1.5 rounded-sm border border-[#1E293B] hover:border-[#B08D57]/60 transition-all group font-mono-data shrink-0"
             title="Open SMC Strategy Desk & Macro Takeaways"
           >
-            <Crosshair className="w-3.5 h-3.5 text-[#B08D57] group-hover:scale-110 transition-transform shrink-0" />
+            <Crosshair className="w-3.5 h-3.5 text-[#B08D57] group-hover:scale-105 transition-transform shrink-0" />
             <span className="hidden 2xl:inline">SMC Strategy</span>
             <span className="2xl:hidden">Strategy</span>
-            <span className="text-[8.5px] bg-[#B08D57]/20 text-[#B08D57] px-1 py-0.2 rounded font-bold">
+            <span className="text-[8.5px] bg-[#B08D57]/20 text-[#B08D57] px-1 py-0.2 rounded-sm font-bold">
               DESK
             </span>
           </button>
@@ -243,43 +243,43 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Client Authentication Button / Authenticated Pill */}
           {userSession.isAuthenticated ? (
             <div id="authenticated-user-badge" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* Interactive Tier Pill & Switcher Trigger */}
+              {/* Interactive Tier Switcher Trigger */}
               <button
                 id="tier-switcher-header-btn"
                 onClick={onOpenTierModal}
                 title="Switch Clearance Tier (Test Mode)"
-                className={`flex items-center gap-1.5 sm:gap-2 ${tierBadgeConfig.bg} border ${tierBadgeConfig.border} px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs shadow-sm shrink-0 transition-all hover:brightness-125 cursor-pointer text-left group`}
+                className={`flex items-center gap-1.5 sm:gap-2 ${tierBadgeConfig.bg} border ${tierBadgeConfig.border} px-2.5 py-1 sm:py-1.5 rounded-sm text-xs shadow-sm shrink-0 transition-all hover:brightness-125 cursor-pointer text-left group`}
               >
-                <ShieldCheck className={`w-3.5 h-3.5 ${tierBadgeConfig.iconText} shrink-0 group-hover:scale-110 transition-transform`} />
+                <ShieldCheck className={`w-3.5 h-3.5 ${tierBadgeConfig.iconText} shrink-0`} />
                 <div className="flex flex-col text-left min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold text-[#EDE9DE] leading-tight font-serif italic whitespace-nowrap truncate">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-[#EDE9DE] leading-tight font-swiss-display whitespace-nowrap truncate">
                       {tierBadgeConfig.label}
                     </span>
                     <ChevronDown className="w-2.5 h-2.5 text-[#BAC7D5] opacity-70 group-hover:opacity-100" />
                   </div>
                   <span className="text-[8.5px] sm:text-[9px] text-[#8292A6] font-mono-data leading-none max-w-[80px] sm:max-w-[120px] truncate">
-                    {userSession.email?.split('@')[0] || "member"} • <span className="text-[#E5C794] underline">switch</span>
+                    {userSession.email?.split('@')[0] || "member"} · <span className="text-[#E5C794] underline">switch</span>
                   </span>
                 </div>
               </button>
 
-              {/* Sign Out Button - Always visible, high contrast, shrink-proof */}
+              {/* Sign Out Button */}
               <button
                 id="user-logout-btn"
                 onClick={onLogout}
                 title={`Sign Out (${userSession.email})`}
                 aria-label="Sign Out"
-                className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg text-[#8292A6] hover:text-[#FF6B6B] hover:bg-[#A6291C]/20 border border-[#B08D57]/40 hover:border-[#FF6B6B]/70 transition-all shrink-0 flex items-center justify-center bg-[#131722] shadow-sm active:scale-95 group cursor-pointer"
+                className="h-8 w-8 sm:h-8.5 sm:w-8.5 rounded-sm text-[#8292A6] hover:text-[#FF6B6B] hover:bg-[#A6291C]/20 border border-[#1E293B] hover:border-[#FF6B6B]/70 transition-all shrink-0 flex items-center justify-center bg-[#0B1019] shadow-sm active:scale-95 group cursor-pointer"
               >
-                <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 group-hover:scale-110 transition-transform" />
+                <LogOut className="w-3.5 h-3.5 shrink-0 group-hover:scale-105 transition-transform" />
               </button>
             </div>
           ) : (
             <button
               id="client-login-btn"
               onClick={onOpenAuthModal}
-              className="flex items-center gap-1.5 bg-[#B08D57] hover:brightness-110 text-[#0E1A2B] font-bold text-[10px] sm:text-[11px] px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg uppercase tracking-wider transition-all active:scale-95 shadow-md shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 bg-[#B08D57] hover:brightness-110 text-[#0E1A2B] font-bold text-[10px] sm:text-[11px] px-3.5 py-1.5 rounded-sm uppercase tracking-wider transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap"
             >
               <User className="w-3.5 h-3.5 shrink-0" />
               <span>Client Login</span>
