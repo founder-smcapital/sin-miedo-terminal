@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "source": "OpenMarket",
+  "symbol": "USD/JPY",
+  "ts": 1728881114000,
+  "sequenceId": 184921,
+  "venue": "FX",
+  "bid": {
+    "price": 156.245,
+    "qty": 560000
+  },
+  "ask": {
+    "price": 156.255,
+    "qty": 430000
+  },
+  "spreadBps": 0.64,
+  "orderBookDepth": {
+    "bidsTotalLots": 1980,
+    "asksTotalLots": 2540,
+    "imbalanceBps": -22.3
+  },
+  "status": "ok"
+}
