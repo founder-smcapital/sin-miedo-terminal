@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/founder-smcapital/sin-miedo-terminal/schemas/market/l2-depth.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "symbol",
+    "ts",
+    "sequenceId",
+    "venue",
+    "bid",
+    "ask",
+    "spreadBps",
+    "orderBookDepth",
+    "status"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 2
+    },
+    "symbol": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sequenceId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "venue": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bid": {
+      "$ref": "#/definitions/priceLevel"
+    },
+    "ask": {
+      "$ref": "#/definitions/priceLevel"
+    },
+    "spreadBps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "orderBookDepth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bidsTotalLots", "asksTotalLots", "imbalanceBps"],
+      "properties": {
+        "bidsTotalLots": { "type": "integer", "minimum": 0 },
+        "asksTotalLots": { "type": "integer", "minimum": 0 },
+        "imbalanceBps": { "type": "number" }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "warning", "error"]
+    }
+  },
+  "definitions": {
+    "priceLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["price", "qty"],
+      "properties": {
+        "price": { "type": "number" },
+        "qty": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
