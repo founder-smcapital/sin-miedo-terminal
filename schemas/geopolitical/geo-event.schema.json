@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/founder-smcapital/sin-miedo-terminal/schemas/geopolitical/geo-event.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "id",
+    "headline",
+    "summary",
+    "category",
+    "sentiment",
+    "rawTimestamp",
+    "sourceTime",
+    "confidenceScore",
+    "impactScore",
+    "location",
+    "isLiveNew"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 2
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "headline": {
+      "type": "string",
+      "minLength": 5
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 5
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sentiment": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rawTimestamp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "confidenceScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "impactScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["country"],
+      "properties": {
+        "country": { "type": "string", "minLength": 1 },
+        "region": { "type": ["string", "null"] }
+      }
+    },
+    "affectedAssets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "isLiveNew": {
+      "type": "boolean"
+    }
+  }
+}
