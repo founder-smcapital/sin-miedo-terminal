@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Dict, Any
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -16,6 +16,7 @@ from backend.core.exceptions import InstitutionalDataError
 from backend.core.openbb_client import get_openbb
 from backend.core.cache import market_data_cache
 from backend.api.v1.router import api_v1_router
+from backend.live_data import start_mock_stream, stop_mock_stream, websocket_endpoint
 
 # Setup institutional logging
 logging.basicConfig(
@@ -24,12 +25,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("sinmiedo.api")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initializes quant infrastructure and verifies provider connectivity on startup."""
     logger.info(f"Starting {settings.APP_NAME} v{settings.VERSION} [{settings.ENVIRONMENT}]")
-    
-    # Warm up or probe OpenBB SDK in background
+
     try:
         obb = get_openbb()
         if obb:
@@ -39,11 +40,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Provider probe warning: {e}")
 
+    try:
+        if settings.DEBUG:
+            await start_mock_stream(app)
+            logger.info("Mock realtime stream started for local free-stack development.")
+    except Exception as e:
+        logger.warning(f"Failed to start mock realtime stream: {e}")
+
     yield
 
-    # Clean shutdown
     logger.info("Shutting down Sin Miedo Capital Market Data API. Clearing memory caches.")
+    try:
+        await stop_mock_stream(app)
+    except Exception as e:
+        logger.warning(f"Error stopping mock realtime stream: {e}")
     await market_data_cache.clear()
+
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -68,7 +80,7 @@ app.add_middleware(
     expose_headers=["X-Request-ID", "Content-Length"]
 )
 
-# Global Institutional Exception Handler
+
 @app.exception_handler(InstitutionalDataError)
 async def institutional_data_exception_handler(request: Request, exc: InstitutionalDataError):
     logger.error(f"[{exc.provider}] Error on {request.url.path}: {exc.message} (HTTP {exc.status_code})")
@@ -87,6 +99,7 @@ async def institutional_data_exception_handler(request: Request, exc: Institutio
         }
     )
 
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled exception processing {request.url.path}: {exc}")
@@ -104,8 +117,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Register v1 API Router
+
 app.include_router(api_v1_router, prefix=settings.API_V1_PREFIX)
+
 
 @app.get("/", tags=["System"])
 async def root_status() -> Dict[str, Any]:
@@ -120,9 +134,11 @@ async def root_status() -> Dict[str, Any]:
             "macro_yield_curve": f"{settings.API_V1_PREFIX}/macro/yield-curve",
             "equity_insiders": f"{settings.API_V1_PREFIX}/equity/insider-filings?symbol=AAPL",
             "derivatives_cot": f"{settings.API_V1_PREFIX}/derivatives/cot?market=SP500",
-            "equity_short_flow": f"{settings.API_V1_PREFIX}/equity/short-flow?symbol=AAPL"
+            "equity_short_flow": f"{settings.API_V1_PREFIX}/equity/short-flow?symbol=AAPL",
+            "live_ws": "/ws/live",
         }
     }
+
 
 @app.get("/health", tags=["System"])
 @app.get(f"{settings.API_V1_PREFIX}/health", tags=["System"])
@@ -134,8 +150,15 @@ async def health_check() -> Dict[str, Any]:
         "version": settings.VERSION,
         "openbb_loaded": obb_ready,
         "cache_active": True,
+        "live_stream_active": settings.DEBUG,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
+
+
+@app.websocket("/ws/live")
+async def live_ws(websocket: WebSocket):
+    await websocket_endpoint(websocket)
+
 
 if __name__ == "__main__":
     import uvicorn
