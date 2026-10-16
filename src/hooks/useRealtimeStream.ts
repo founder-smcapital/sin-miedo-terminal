@@ -169,6 +169,28 @@ export interface StreamGatewayInfo {
   resetPolygonKey: () => Promise<{ success: boolean; message: string }>;
 }
 
+function buildDefaultWsUrl() {
+  try {
+    // Prefer explicit env (via Vite) if set, otherwise try same-origin websocket, otherwise localhost:8001
+    // Vite exposes env vars as import.meta.env.VITE_WS_URL
+    // @ts-ignore
+    const fromEnv = import.meta?.env?.VITE_WS_URL as string | undefined;
+    if (fromEnv) return fromEnv;
+  } catch (e) {}
+
+  try {
+    const loc = window.location;
+    const proto = loc.protocol === "https:" ? "wss" : "ws";
+    // If frontend and backend are same host and proxied, use relative host
+    if (loc.port) {
+      return `${proto}://${loc.hostname}:8001/ws/live`;
+    }
+    return `${proto}://${loc.hostname}/ws/live`;
+  } catch (e) {
+    return `ws://localhost:8001/ws/live`;
+  }
+}
+
 export function useRealtimeStream(
   onMacroUpdate?: (data: MacroDataState) => void,
   initialMode: "stream" | "polling" = "stream"
@@ -286,11 +308,11 @@ export function useRealtimeStream(
           const statData = await statRes.json();
           setPolygonData(statData);
         }
-        return { 
-          success: true, 
-          message: data.message, 
-          tier: data.tier, 
-          liveNbboEntitled: data.liveNbboEntitled 
+        return {
+          success: true,
+          message: data.message,
+          tier: data.tier,
+          liveNbboEntitled: data.liveNbboEntitled
         };
       } else {
         return { success: false, message: data.message || "Failed to configure Polygon key" };
@@ -320,12 +342,14 @@ export function useRealtimeStream(
     }
   }, []);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const onMacroUpdateRef = useRef(onMacroUpdate);
   const packetCountRef = useRef(0);
   const lastPacketTimeRef = useRef<number | null>(null);
   const lastTelemetryFlushRef = useRef<number>(0);
   const lastL2TickTimeRef = useRef<number>(0);
+  const reconnectAttemptsRef = useRef(0);
+  const wsUrl = useMemo(() => buildDefaultWsUrl(), []);
 
   useEffect(() => {
     onMacroUpdateRef.current = onMacroUpdate;
@@ -342,139 +366,104 @@ export function useRealtimeStream(
     }
   }, []);
 
-  const connectStream = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-
-    if (mode !== "stream") {
-      setIsConnected(false);
-      return;
-    }
-
+  const createWebSocket = useCallback(() => {
     try {
-      const es = new EventSource("/api/macro/stream");
-      eventSourceRef.current = es;
+      if (wsRef.current) {
+        try {
+          wsRef.current.close();
+        } catch (e) {}
+        wsRef.current = null;
+      }
 
-      es.addEventListener("open", () => {
+      if (mode !== "stream") {
+        setIsConnected(false);
+        return;
+      }
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        reconnectAttemptsRef.current = 0;
         setIsConnected(true);
-      });
+        setProtocol("SMC-STREAM-L2");
+      };
 
-      es.addEventListener("handshake", (e) => {
+      ws.onmessage = (evt: MessageEvent) => {
         try {
-          const data = JSON.parse(e.data);
-          if (data.protocol) setProtocol(data.protocol);
-          if (data.gateway) setGateway(data.gateway);
-          if (data.latencyTargetMs) setLatencyMs(data.latencyTargetMs);
-          setIsConnected(true);
-        } catch (err) {
-          // ignore parse error
-        }
-      });
-
-      es.addEventListener("macro-pulse", (e) => {
-        try {
-          const data = JSON.parse(e.data);
+          const data = JSON.parse(evt.data);
           packetCountRef.current += 1;
           lastPacketTimeRef.current = Date.now();
-          flushTelemetry();
-          setIsConnected((prev) => (prev ? prev : true));
-          if (onMacroUpdateRef.current) {
-            onMacroUpdateRef.current(data);
-          }
-        } catch (err) {
-          // ignore
-        }
-      });
 
-      es.addEventListener("l2-depth", (e) => {
-        try {
-          const tick = JSON.parse(e.data);
-          packetCountRef.current += 1;
-          lastPacketTimeRef.current = Date.now();
-          const now = Date.now();
-          // Throttle L2 depth state renders to at most 1 every 1500ms to keep client CPU cool
-          if (now - lastL2TickTimeRef.current >= 1500) {
-            lastL2TickTimeRef.current = now;
-            setL2Tick(tick);
-          }
-          flushTelemetry();
-        } catch (err) {
-          // ignore
-        }
-      });
+          // Handle different message shapes for backward compatibility
+          const eventType = (data.event || data.type || "tick").toLowerCase();
 
-      es.addEventListener("openmarket-verify", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          setOpenMarketData(data);
-        } catch (err) {
-          // ignore
-        }
-      });
-
-      es.addEventListener("finnhub-verify", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          setFinnhubData(data);
-        } catch (err) {
-          // ignore
-        }
-      });
-
-      es.addEventListener("polygon-verify", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          setPolygonData(data);
-        } catch (err) {
-          // ignore
-        }
-      });
-
-      es.addEventListener("ping", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (data.t) {
-            const transit = Math.max(8, Math.min(65, Date.now() - data.t));
-            // Only update latency state when elapsed to prevent micro-jitter render loops
+          if (eventType === "tick" || eventType === "macro-pulse") {
+            // macro update payload
+            flushTelemetry();
+            setIsConnected((prev) => (prev ? prev : true));
+            if (onMacroUpdateRef.current) onMacroUpdateRef.current(data as MacroDataState);
+          } else if (eventType === "l2-depth") {
+            const now = Date.now();
+            if (now - lastL2TickTimeRef.current >= 1500) {
+              lastL2TickTimeRef.current = now;
+              setL2Tick(data as L2DepthTick);
+            }
+            flushTelemetry();
+          } else if (eventType === "ping" && data.t) {
+            const transit = Math.max(8, Math.min(3000, Date.now() - data.t));
             const now = Date.now();
             if (now - lastTelemetryFlushRef.current >= 3000) {
               setLatencyMs(transit);
             }
+          } else {
+            // Generic object: attempt to treat as macro update
+            if (onMacroUpdateRef.current && data) onMacroUpdateRef.current(data as MacroDataState);
           }
         } catch (err) {
-          // ignore
+          // ignore parse errors
         }
-      });
-
-      es.onerror = () => {
-        setIsConnected(false);
-        // Browser EventSource automatically reconnects; we keep isConnected updated
       };
+
+      ws.onerror = () => {
+        setIsConnected(false);
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        // reconnect with backoff
+        reconnectAttemptsRef.current += 1;
+        const backoff = Math.min(30_000, 500 * Math.pow(2, Math.min(6, reconnectAttemptsRef.current)));
+        setTimeout(() => {
+          if (mode === "stream") createWebSocket();
+        }, backoff);
+      };
+
     } catch (err) {
-      console.warn("Direct stream gateway fallback to polling:", err);
+      console.warn("Realtime websocket failed, fallback will be used:", err);
       setIsConnected(false);
     }
-  }, [mode, flushTelemetry]);
+  }, [mode, wsUrl, flushTelemetry]);
 
   useEffect(() => {
-    connectStream();
+    if (mode === "stream") createWebSocket();
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
+      try {
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+      } catch (e) {}
     };
-  }, [connectStream]);
+  }, [createWebSocket, mode]);
 
   const toggleMode = useCallback(() => {
     setMode((prev) => (prev === "stream" ? "polling" : "stream"));
   }, []);
 
   const reconnect = useCallback(() => {
-    connectStream();
-  }, [connectStream]);
+    if (mode === "stream") createWebSocket();
+  }, [createWebSocket, mode]);
 
   return useMemo(
     () => ({
@@ -525,4 +514,3 @@ export function useRealtimeStream(
     ]
   );
 }
-
