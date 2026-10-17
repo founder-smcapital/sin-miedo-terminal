@@ -6618,14 +6618,16 @@ app.get("/api/futures/refresh", async (req, res) => {
   });
 });
 
-// API: One-Click TradingView Parity & Micro Crude Calibration
-app.post("/api/futures/calibrate-mcl", (req, res) => {
-  const { price, prevClose, high, low, sourceName } = req.body || {};
-  const targetPrice = typeof price === "number" && price > 30 && price < 200 ? price : 94.85;
-  const pClose = typeof prevClose === "number" && prevClose > 30 ? prevClose : (liveFuturesStore.MCL?.prevClose || 94.15);
+// API: One-Click TradingView Parity & Micro Crude Calibration (Supports GET & POST)
+app.all("/api/futures/calibrate-mcl", (req, res) => {
+  const payload = { ...req.query, ...req.body };
+  const rawPrice = payload.price ? parseFloat(String(payload.price)) : NaN;
+  const rawPrevClose = payload.prevClose ? parseFloat(String(payload.prevClose)) : NaN;
+  const targetPrice = !isNaN(rawPrice) && rawPrice > 30 && rawPrice < 200 ? rawPrice : 94.85;
+  const pClose = !isNaN(rawPrevClose) && rawPrevClose > 30 ? rawPrevClose : (liveFuturesStore.MCL?.prevClose || 94.15);
   const chgPts = Number((targetPrice - pClose).toFixed(2));
   const chgPct = Number(((chgPts / pClose) * 100).toFixed(2));
-  const src = sourceName || "TradingView Parity Calibration";
+  const src = (payload.sourceName as string) || "TradingView Parity Calibration";
 
   for (const s of ["MCL", "CL"]) {
     if (liveFuturesStore[s]) {
