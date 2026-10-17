@@ -35,6 +35,7 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
   onReconnect,
 }) => {
   const [polygonKeyInput, setPolygonKeyInput] = useState("");
+  const [polygonAccessKeyInput, setPolygonAccessKeyInput] = useState("");
   const [isConfiguringPolygon, setIsConfiguringPolygon] = useState(false);
   const [polygonFeedback, setPolygonFeedback] = useState<{ success: boolean; text: string } | null>(null);
   const [showPolygonConfig, setShowPolygonConfig] = useState(false);
@@ -535,7 +536,14 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
                   type="password"
                   value={polygonKeyInput}
                   onChange={(e) => setPolygonKeyInput(e.target.value)}
-                  placeholder="Paste Polygon.io API key (e.g. HbefQu3...)"
+                  placeholder="Paste Polygon.io API key (e.g. Hbef...)"
+                  className="flex-1 bg-black/80 border border-[#B08D57]/30 focus:border-[#B08D57] rounded px-2.5 py-1 text-[#EDE9DE] placeholder-[#8292A6]/50 font-mono text-[10px] outline-none"
+                />
+                <input
+                  type="text"
+                  value={polygonAccessKeyInput}
+                  onChange={(e) => setPolygonAccessKeyInput(e.target.value)}
+                  placeholder="Access Key ID (e.g. f6afc5d7-...)"
                   className="flex-1 bg-black/80 border border-[#B08D57]/30 focus:border-[#B08D57] rounded px-2.5 py-1 text-[#EDE9DE] placeholder-[#8292A6]/50 font-mono text-[10px] outline-none"
                 />
                 <button
@@ -544,14 +552,18 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
                     if (!polygonKeyInput.trim()) return;
                     setIsConfiguringPolygon(true);
                     setPolygonFeedback(null);
-                    const res = await streamInfo.configurePolygonKey(polygonKeyInput.trim());
+                    const res = await streamInfo.configurePolygonKey(
+                      polygonKeyInput.trim(),
+                      polygonAccessKeyInput.trim() || undefined
+                    );
                     setIsConfiguringPolygon(false);
                     setPolygonFeedback({ success: res.success, text: res.message });
                     if (res.success) {
                       setPolygonKeyInput("");
+                      setPolygonAccessKeyInput("");
                     }
                   }}
-                  className="px-3 py-1 bg-[#10B981]/20 hover:bg-[#10B981]/30 text-[#34D399] border border-[#10B981]/40 rounded font-bold uppercase transition-all disabled:opacity-50 text-[9.5px]"
+                  className="px-3 py-1 bg-[#10B981]/20 hover:bg-[#10B981]/30 text-[#34D399] border border-[#10B981]/40 rounded font-bold uppercase transition-all disabled:opacity-50 text-[9.5px] whitespace-nowrap"
                 >
                   {isConfiguringPolygon ? "Validating Key..." : "Activate Key"}
                 </button>
@@ -564,7 +576,7 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
                       setIsConfiguringPolygon(false);
                       setPolygonFeedback({ success: res.success, text: res.message });
                     }}
-                    className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[#BAC7D5] border border-white/20 rounded uppercase transition-all text-[9.5px]"
+                    className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[#BAC7D5] border border-white/20 rounded uppercase transition-all text-[9.5px] whitespace-nowrap"
                   >
                     Reset to Default
                   </button>
@@ -581,10 +593,22 @@ export const StreamGatewayModal: React.FC<StreamGatewayModalProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center gap-3 pt-1 text-[8.5px] text-[#8292A6]">
-                <span>Status: <strong className="text-white font-mono">{streamInfo.polygonData?.tier === "paid_realtime" ? "Paid Real-Time NBBO" : "Free Aggregates & VWAP"}</strong></span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-[8.5px] text-[#8292A6]">
+                <span>Status: <strong className="text-white font-mono">{streamInfo.polygonData?.tier === "paid_realtime" ? "Paid Real-Time NBBO" : "Aggregates & SIP Tape"}</strong></span>
                 <span>•</span>
                 <span>Active Feed: <strong className="text-white font-mono">{streamInfo.polygonData?.isUserKey ? "User Account" : "Default Built-In Key"}</strong></span>
+                {streamInfo.polygonData?.maskedApiKey && (
+                  <>
+                    <span>•</span>
+                    <span>API Key: <strong className="text-[#EDE9DE] font-mono">{streamInfo.polygonData.maskedApiKey}</strong></span>
+                  </>
+                )}
+                {streamInfo.polygonData?.accessKeyId && (
+                  <>
+                    <span>•</span>
+                    <span>Access Key ID: <strong className="text-[#34D399] font-mono">{streamInfo.polygonData.accessKeyId}</strong></span>
+                  </>
+                )}
                 <span>•</span>
                 <span>NBBO Entitlement: <strong className={streamInfo.polygonData?.liveNbboEntitled ? "text-[#10B981]" : "text-[#F59E0B]"}>{streamInfo.polygonData?.liveNbboEntitled ? "ENTITLED (LIVE)" : "STANDARD SIP"}</strong></span>
               </div>

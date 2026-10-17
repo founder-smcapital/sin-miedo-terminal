@@ -307,11 +307,11 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
 
     // 1M Macro Trajectory
     return [
-      { time: "W-4", dxy: 100.85, mclResistanceCap: 92.87, mesPrice: 7580.00, mesChangePct: -2.25, mnqPrice: 28950.00, mnqChangePct: -2.50 },
-      { time: "W-3", dxy: 101.20, mclResistanceCap: 92.22, mesPrice: 7620.00, mesChangePct: -1.74, mnqPrice: 29120.00, mnqChangePct: -1.93 },
-      { time: "W-2", dxy: 101.65, mclResistanceCap: 91.42, mesPrice: 7690.00, mesChangePct: -0.83, mnqPrice: 29480.00, mnqChangePct: -0.71 },
-      { time: "W-1", dxy: 102.40, mclResistanceCap: 90.02, mesPrice: 7755.00, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
-      { time: "NOW", dxy: currentPrice, mclResistanceCap: Number((90.77 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
+      { time: "W-4", dxy: 100.85, mclResistanceCap: 96.85, mesPrice: 7580.00, mesChangePct: -2.25, mnqPrice: 28950.00, mnqChangePct: -2.50 },
+      { time: "W-3", dxy: 101.20, mclResistanceCap: 96.20, mesPrice: 7620.00, mesChangePct: -1.74, mnqPrice: 29120.00, mnqChangePct: -1.93 },
+      { time: "W-2", dxy: 101.65, mclResistanceCap: 95.40, mesPrice: 7690.00, mesChangePct: -0.83, mnqPrice: 29480.00, mnqChangePct: -0.71 },
+      { time: "W-1", dxy: 102.40, mclResistanceCap: 94.60, mesPrice: 7755.00, mesChangePct: 0.00, mnqPrice: 29980.00, mnqChangePct: 0.98 },
+      { time: "NOW", dxy: currentPrice, mclResistanceCap: Number((95.70 - ((currentPrice - 102.00) * 1.85)).toFixed(2)), mesPrice: 7722.00, mesChangePct: -0.42, mnqPrice: 29565.00, mnqChangePct: -0.48 }
     ];
   }, [timeframe, apiData, currentPrice]);
 
@@ -880,7 +880,7 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
           </p>
           <div className="pt-1 border-t border-white/5 flex items-center justify-between text-[10px]">
             <span className="text-[#8292A6]">MCL Resistance Target:</span>
-            <span className="text-rose-400 font-bold">$91.80 – $92.20 Overhead Cap</span>
+            <span className="text-rose-400 font-bold">$95.80 – $96.20 Overhead Cap</span>
           </div>
         </div>
 

@@ -42,6 +42,7 @@ export const CONTRACT_TICKERS = [
   "HSI",
   "VX",
   "DXY",
+  "MCL",
   "CL",
   "BZ",
   "MGC",
@@ -52,11 +53,11 @@ export type ContractSymbol = (typeof CONTRACT_TICKERS)[number];
 export type ContractCategory = "ALL" | "GLOBAL" | "US" | "VOLATILITY" | "COMMODITIES";
 
 export const CATEGORY_MAP: Record<ContractCategory, { label: string; symbols: readonly ContractSymbol[] }> = {
-  ALL: { label: "All Instruments (16)", symbols: CONTRACT_TICKERS },
+  ALL: { label: "All Instruments (17)", symbols: CONTRACT_TICKERS },
   GLOBAL: { label: "Global Indices ($IBEX35, $KOSPI, $NKD, $FESX, $DAX, $HSI)", symbols: ["IBEX", "KOSPI", "NKD", "FESX", "DAX", "HSI"] },
   US: { label: "US Equities ($MES, $ES, $MNQ, $NQ)", symbols: ["MES", "ES", "MNQ", "NQ"] },
   VOLATILITY: { label: "Volatility ($VX / VIX)", symbols: ["VX"] },
-  COMMODITIES: { label: "Commodities, FX & Crypto ($DXY, $CL, $BZ, $MGC, $MBT)", symbols: ["DXY", "CL", "BZ", "MGC", "MBT"] },
+  COMMODITIES: { label: "Commodities, FX & Crypto ($DXY, $MCL, $CL, $BZ, $MGC, $MBT)", symbols: ["DXY", "MCL", "CL", "BZ", "MGC", "MBT"] },
 };
 
 interface FuturesViewProps {
@@ -90,6 +91,34 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const [calibrateInputPrice, setCalibrateInputPrice] = useState<string>("");
+  const [isCalibratingMcl, setIsCalibratingMcl] = useState(false);
+  const [calibrateSuccessMsg, setCalibrateSuccessMsg] = useState<string | null>(null);
+
+  const handleCalibrateMcl = useCallback(async (customPrice?: number) => {
+    setIsCalibratingMcl(true);
+    try {
+      const res = await fetch("/api/futures/calibrate-mcl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          price: customPrice,
+          sourceName: "TradingView Parity Alignment"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCalibrateSuccessMsg(`Aligned to $${data.mclPrice.toFixed(2)} (${data.source})`);
+        fetchLiveFutures(true);
+        setTimeout(() => setCalibrateSuccessMsg(null), 4000);
+      }
+    } catch {
+      // error
+    } finally {
+      setIsCalibratingMcl(false);
+    }
+  }, [fetchLiveFutures]);
 
   const checkScrollState = useCallback(() => {
     const el = tickerScrollRef.current;
@@ -799,6 +828,58 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
           </div>
         );
       })()}
+
+      {/* TradingView Parity & Micro Crude (MCL / CL) Feed Reconciliation Banner */}
+      {(selectedSymbol === "MCL" || selectedSymbol === "CL") && (
+        <div className="bg-[#101726]/95 border border-[#F59E0B]/50 rounded-xl p-3 sm:p-3.5 shadow-xl font-mono-data text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/20 border border-[#F59E0B]/50 flex items-center justify-center shrink-0 text-[#FBBF24]">
+              <Flame className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#FBF8F1] text-sm">
+                  TradingView Parity &amp; Micro Crude Feed: {currentContract.ticker} (${currentContract.price.toFixed(2)})
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Sync Active
+                </span>
+              </div>
+              <div className="text-[11px] text-[#BAC7D5] mt-0.5">
+                Feed: <span className="text-[#E5C794] font-semibold">{currentContract.source || "CME NYMEX Globex Live Feed"}</span> · Sizing: <span className="text-white font-bold">{currentContract.multiplier} bbl</span> (${currentContract.contractSpecs.tickValue}/tick) · Multi-source CME / Polygon tape parity.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-lg border border-[#253347]">
+              <span className="text-[10px] text-[#8292A6]">Target Price $:</span>
+              <input
+                type="number"
+                step="0.01"
+                placeholder={currentContract.price.toFixed(2)}
+                value={calibrateInputPrice}
+                onChange={(e) => setCalibrateInputPrice(e.target.value)}
+                className="w-20 bg-black/90 border border-[#B08D57]/50 rounded px-1.5 py-0.5 text-xs text-amber-200 font-bold focus:outline-none focus:border-[#B08D57]"
+              />
+            </div>
+            <button
+              onClick={() => handleCalibrateMcl(parseFloat(calibrateInputPrice) || currentContract.price)}
+              disabled={isCalibratingMcl}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D97706] to-[#B08D57] text-[#0A111C] font-black text-xs hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 shadow-md disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isCalibratingMcl ? "animate-spin" : ""}`} />
+              <span>{isCalibratingMcl ? "Calibrating..." : "Align TradingView Basis"}</span>
+            </button>
+            {calibrateSuccessMsg && (
+              <span className="text-[10px] text-emerald-400 font-bold">
+                ✓ {calibrateSuccessMsg}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 3. Cross-Asset Volatility Radar & Institutional Value Area Chart Suite */}
       <div className="space-y-3">

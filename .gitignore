@@ -9,7 +9,6 @@ coverage/
 *.bundle
 *.zip
 .aistudio/
--e 
 __pycache__/
 *.pyc
 

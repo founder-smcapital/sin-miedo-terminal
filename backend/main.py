@@ -5,9 +5,9 @@ Entrypoint for OpenBB v5+, SEC EDGAR, FRED, CFTC, and FINRA terminal backend ser
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -104,8 +104,33 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Register v1 API Router
-app.include_router(api_v1_router, prefix=settings.API_V1_PREFIX)
+async def verify_internal_token(
+    request: Request,
+    x_internal_token: Optional[str] = Header(None, alias="X-Internal-Token")
+):
+    """
+    Enforces inter-service zero-trust authentication between Node BFF and Python quant microservice.
+    Allows unauthenticated access in development when REQUIRE_INTERNAL_AUTH=False.
+    """
+    if settings.REQUIRE_INTERNAL_AUTH or (settings.ENVIRONMENT == "production" and settings.INTERNAL_SERVICE_TOKEN):
+        expected_token = settings.INTERNAL_SERVICE_TOKEN
+        auth_header = request.headers.get("Authorization")
+        bearer_token = auth_header.split(" ", 1)[1].strip() if (auth_header and auth_header.startswith("Bearer ")) else None
+
+        if x_internal_token != expected_token and bearer_token != expected_token:
+            client_ip = request.client.host if request.client else "unknown"
+            logger.warning(f"Unauthorized quant endpoint access to {request.url.path} from {client_ip}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized: Valid X-Internal-Token header is required for institutional quant endpoints."
+            )
+
+# Register v1 API Router guarded by internal service token dependency
+app.include_router(
+    api_v1_router, 
+    prefix=settings.API_V1_PREFIX,
+    dependencies=[Depends(verify_internal_token)]
+)
 
 @app.get("/", tags=["System"])
 async def root_status() -> Dict[str, Any]:

@@ -48,6 +48,18 @@ try:
         CACHE_TTL_SECONDS: int = Field(default=300, env="CACHE_TTL_SECONDS")
         REQUEST_TIMEOUT_SECONDS: float = Field(default=15.0, env="REQUEST_TIMEOUT_SECONDS")
 
+        # Inter-service Authentication
+        INTERNAL_SERVICE_TOKEN: str = Field(
+            default="sm-internal-quant-gateway-token",
+            env="INTERNAL_SERVICE_TOKEN",
+            description="Shared authentication secret between Node BFF and Python quant microservice"
+        )
+        REQUIRE_INTERNAL_AUTH: bool = Field(
+            default=False,
+            env="REQUIRE_INTERNAL_AUTH",
+            description="Enforce X-Internal-Token verification on private quant endpoints"
+        )
+
         # CORS Origins for Terminal Frontend
         CORS_ORIGINS: List[str] = [
             "https://io.sinmiedocapital.com",
@@ -74,6 +86,8 @@ except ImportError:
         SEC_USER_AGENT: str = os.getenv("SEC_USER_AGENT", "SinMiedoCapital-QuantTerminal/2.4 (admin@sinmiedocapital.com)")
         CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "300"))
         REQUEST_TIMEOUT_SECONDS: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "15.0"))
+        INTERNAL_SERVICE_TOKEN: str = os.getenv("INTERNAL_SERVICE_TOKEN", "sm-internal-quant-gateway-token")
+        REQUIRE_INTERNAL_AUTH: bool = os.getenv("REQUIRE_INTERNAL_AUTH", "false").lower() == "true"
         CORS_ORIGINS: List[str] = [
             "https://io.sinmiedocapital.com",
             "http://localhost:3000",

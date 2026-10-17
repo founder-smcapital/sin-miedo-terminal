@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
-const Ajv = require("ajv");
+const Ajv2020 = require("ajv/dist/2020");
 
-const ajv = new Ajv({ allErrors: true, strict: false, allowUnionTypes: true });
+const ajv = new Ajv2020({ allErrors: true, strict: false, allowUnionTypes: true });
 
 function walkJsonFiles(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });

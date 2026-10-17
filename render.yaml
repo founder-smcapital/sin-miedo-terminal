@@ -26,3 +26,6 @@ services:
         value: "300"
       - key: REQUEST_TIMEOUT_SECONDS
         value: "15.0"
+      - key: INTERNAL_SERVICE_TOKEN
+        sync: false
+

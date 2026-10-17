@@ -133,12 +133,15 @@ export interface PolygonValidationData {
   latencyMs: number;
   marketStatus: string | null;
   serverTime?: string | null;
+  accessKeyId?: string | null;
+  maskedApiKey?: string | null;
   quotes: {
     spy: PolygonQuote | null;
     qqq: PolygonQuote | null;
     nvda: PolygonQuote | null;
     aapl: PolygonQuote | null;
     btc: PolygonQuote | null;
+    uso?: PolygonQuote | null;
   };
   benchmarks: {
     spyVwapDeltaBps: number | null;
@@ -165,7 +168,7 @@ export interface StreamGatewayInfo {
   polygonData: PolygonValidationData | null;
   isPolygonVerifying: boolean;
   triggerPolygonVerify: () => Promise<void>;
-  configurePolygonKey: (key: string) => Promise<{ success: boolean; message: string; tier?: string; liveNbboEntitled?: boolean }>;
+  configurePolygonKey: (key: string, accessKeyId?: string) => Promise<{ success: boolean; message: string; tier?: string; liveNbboEntitled?: boolean }>;
   resetPolygonKey: () => Promise<{ success: boolean; message: string }>;
 }
 
@@ -270,13 +273,13 @@ export function useRealtimeStream(
     }
   }, []);
 
-  const configurePolygonKey = useCallback(async (key: string) => {
+  const configurePolygonKey = useCallback(async (key: string, accessKeyId?: string) => {
     setIsPolygonVerifying(true);
     try {
       const res = await fetch("/api/polygon/configure", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: key })
+        body: JSON.stringify({ apiKey: key, accessKeyId })
       });
       const data = await res.json();
       if (res.ok && data.success) {

@@ -18,7 +18,7 @@
         "calmModeDefault": { "type": "boolean", "description": "Sensory calm mode setting" }
       },
       "rules": {
-        "read": "auth != null",
+        "read": "auth != null && auth.uid == resource.data.id",
         "write": "auth != null && auth.uid == resource.data.id"
       }
     },
@@ -35,7 +35,7 @@
         "updatedAt": { "type": "string" }
       },
       "rules": {
-        "read": "auth != null",
+        "read": "auth != null && auth.uid == resource.data.userId",
         "write": "auth != null && auth.uid == request.resource.data.userId"
       }
     },
