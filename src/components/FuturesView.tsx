@@ -92,33 +92,6 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const [calibrateInputPrice, setCalibrateInputPrice] = useState<string>("");
-  const [isCalibratingMcl, setIsCalibratingMcl] = useState(false);
-  const [calibrateSuccessMsg, setCalibrateSuccessMsg] = useState<string | null>(null);
-
-  const handleCalibrateMcl = useCallback(async (customPrice?: number) => {
-    setIsCalibratingMcl(true);
-    try {
-      const res = await fetch("/api/futures/calibrate-mcl", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          price: customPrice,
-          sourceName: "TradingView Parity Alignment"
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCalibrateSuccessMsg(`Aligned to $${data.mclPrice.toFixed(2)} (${data.source})`);
-        fetchLiveFutures(true);
-        setTimeout(() => setCalibrateSuccessMsg(null), 4000);
-      }
-    } catch {
-      // error
-    } finally {
-      setIsCalibratingMcl(false);
-    }
-  }, [fetchLiveFutures]);
 
   const checkScrollState = useCallback(() => {
     const el = tickerScrollRef.current;
@@ -229,6 +202,34 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
       if (isManual) setIsRefreshing(false);
     }
   }, []);
+
+  const [calibrateInputPrice, setCalibrateInputPrice] = useState<string>("");
+  const [isCalibratingMcl, setIsCalibratingMcl] = useState(false);
+  const [calibrateSuccessMsg, setCalibrateSuccessMsg] = useState<string | null>(null);
+
+  const handleCalibrateMcl = useCallback(async (customPrice?: number) => {
+    setIsCalibratingMcl(true);
+    try {
+      const res = await fetch("/api/futures/calibrate-mcl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          price: customPrice,
+          sourceName: "TradingView Parity Alignment"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCalibrateSuccessMsg(`Aligned to $${data.mclPrice.toFixed(2)} (${data.source})`);
+        fetchLiveFutures(true);
+        setTimeout(() => setCalibrateSuccessMsg(null), 4000);
+      }
+    } catch {
+      // error
+    } finally {
+      setIsCalibratingMcl(false);
+    }
+  }, [fetchLiveFutures]);
 
   const [isStreamActive, setIsStreamActive] = useState(false);
 
