@@ -150,6 +150,27 @@ export interface PolygonValidationData {
   error: string | null;
 }
 
+export interface MarketValidationMetrics {
+  totalReceived: number;
+  totalValid: number;
+  totalQuarantined: number;
+  totalDropped: number;
+  violationsByCategory: Record<string, number>;
+  dlqSize: number;
+}
+
+export interface DriftMetric {
+  symbol: string;
+  streamingPrice: number;
+  benchmarkPrice: number;
+  basisPointsDrift: number;
+  percentageDrift: number;
+  driftRegime: "SYNCHRONIZED" | "EXPANDING_DRIFT" | "STRUCTURAL_DESYNC";
+  isTightlyCorrelated: boolean;
+  sampleCount: number;
+  timestamp: number;
+}
+
 export interface StreamGatewayInfo {
   isConnected: boolean;
   protocol: string;
@@ -170,6 +191,10 @@ export interface StreamGatewayInfo {
   triggerPolygonVerify: () => Promise<void>;
   configurePolygonKey: (key: string, accessKeyId?: string) => Promise<{ success: boolean; message: string; tier?: string; liveNbboEntitled?: boolean }>;
   resetPolygonKey: () => Promise<{ success: boolean; message: string }>;
+  validationTelemetry: MarketValidationMetrics | null;
+  driftMetrics: DriftMetric[];
+  isGeneratingSynthetic: boolean;
+  triggerSyntheticSim: (preset?: string) => Promise<{ success: boolean; message: string }>;
 }
 
 export function useRealtimeStream(
@@ -189,6 +214,9 @@ export function useRealtimeStream(
   const [isFinnhubVerifying, setIsFinnhubVerifying] = useState(false);
   const [polygonData, setPolygonData] = useState<PolygonValidationData | null>(null);
   const [isPolygonVerifying, setIsPolygonVerifying] = useState(false);
+  const [validationTelemetry, setValidationTelemetry] = useState<MarketValidationMetrics | null>(null);
+  const [driftMetrics, setDriftMetrics] = useState<DriftMetric[]>([]);
+  const [isGeneratingSynthetic, setIsGeneratingSynthetic] = useState(false);
   const [l2Tick, setL2Tick] = useState<L2DepthTick | null>({
     symbol: "USD/JPY",
     bid: 156.245,
@@ -204,7 +232,7 @@ export function useRealtimeStream(
     timestamp: Date.now()
   });
 
-  // Initial fetch of OpenMarket & Finnhub status
+  // Initial fetch of OpenMarket, Finnhub, Polygon & Validation status
   useEffect(() => {
     fetch("/api/openmarket/status")
       .then((res) => (res.ok ? res.json() : null))
@@ -224,6 +252,20 @@ export function useRealtimeStream(
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setPolygonData(data);
+      })
+      .catch(() => {});
+
+    fetch("/api/v1/validation/telemetry")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.metrics) setValidationTelemetry(data.metrics);
+      })
+      .catch(() => {});
+
+    fetch("/api/v1/reconciliation/drift-metrics")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.metrics) setDriftMetrics(data.metrics);
       })
       .catch(() => {});
   }, []);
@@ -320,6 +362,32 @@ export function useRealtimeStream(
       return { success: false, message: err?.message || "Failed to reset Polygon key" };
     } finally {
       setIsPolygonVerifying(false);
+    }
+  }, []);
+
+  const triggerSyntheticSim = useCallback(async (preset = "VOLATILE_REGIME") => {
+    setIsGeneratingSynthetic(true);
+    try {
+      const res = await fetch("/api/v1/generator/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: "ES", preset, barCount: 15 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Immediately refresh validation telemetry
+        const valRes = await fetch("/api/v1/validation/telemetry");
+        if (valRes.ok) {
+          const valData = await valRes.json();
+          if (valData.metrics) setValidationTelemetry(valData.metrics);
+        }
+        return { success: true, message: `Synthesized ${data.bars?.length || 15} Merton Jump Diffusion bars for ${preset}` };
+      }
+      return { success: false, message: "Synthetic generator returned non-200" };
+    } catch (err: any) {
+      return { success: false, message: err?.message || "Synthetic simulation network error" };
+    } finally {
+      setIsGeneratingSynthetic(false);
     }
   }, []);
 
@@ -435,6 +503,24 @@ export function useRealtimeStream(
         }
       });
 
+      es.addEventListener("validation-telemetry", (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          setValidationTelemetry(data);
+        } catch (err) {
+          // ignore
+        }
+      });
+
+      es.addEventListener("drift-metrics", (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (Array.isArray(data)) setDriftMetrics(data);
+        } catch (err) {
+          // ignore
+        }
+      });
+
       es.addEventListener("ping", (e) => {
         try {
           const data = JSON.parse(e.data);
@@ -500,6 +586,10 @@ export function useRealtimeStream(
       triggerPolygonVerify,
       configurePolygonKey,
       resetPolygonKey,
+      validationTelemetry,
+      driftMetrics,
+      isGeneratingSynthetic,
+      triggerSyntheticSim,
       toggleMode,
       reconnect,
     }),
@@ -523,6 +613,10 @@ export function useRealtimeStream(
       triggerPolygonVerify,
       configurePolygonKey,
       resetPolygonKey,
+      validationTelemetry,
+      driftMetrics,
+      isGeneratingSynthetic,
+      triggerSyntheticSim,
       toggleMode,
       reconnect,
     ]

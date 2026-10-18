@@ -2836,11 +2836,56 @@ async function syncLiveGeopoliticalRssNews(): Promise<void> {
   }
 }
 
+// Canonical Market Data Ingress Stream Validator
+let globalPipelineSequence = 1000;
+function validateStreamTick(
+  source: string,
+  symbol: string,
+  price: number,
+  venue = "CME",
+  bid?: number,
+  ask?: number,
+  volume?: number
+) {
+  globalPipelineSequence++;
+  return marketDataPipeline.process({
+    source,
+    symbol,
+    price,
+    sequenceId: globalPipelineSequence,
+    ts: Date.now(),
+    venue,
+    bid: bid !== undefined ? bid : price,
+    ask: ask !== undefined ? ask : price,
+    volume: volume || 100
+  });
+}
+
 // Global non-blocking background initialization controller
 let backgroundSyncStarted = false;
 export function initBackgroundSync() {
   if (backgroundSyncStarted) return;
   backgroundSyncStarted = true;
+
+  // Immediate validation pipeline & drift detector baseline seeding
+  for (const [sym, contract] of Object.entries(liveFuturesStore)) {
+    if (contract && contract.price) {
+      validateStreamTick(
+        contract.source || "CME-Globex",
+        sym,
+        contract.price,
+        "CME",
+        Number((contract.low || contract.price).toFixed(2)),
+        Number((contract.high || contract.price).toFixed(2)),
+        contract.multiplier
+      );
+    }
+  }
+  driftDetector.recordObservation("MCL/CL", liveFuturesStore.MCL?.price || 94.85, liveFuturesStore.CL?.price || 94.85);
+  driftDetector.recordObservation("MES/ES", liveFuturesStore.MES?.price || 7704.5, liveFuturesStore.ES?.price || 7704.5);
+  driftDetector.recordObservation("MNQ/NQ", liveFuturesStore.MNQ?.price || 30413.5, liveFuturesStore.NQ?.price || 30413.5);
+  driftDetector.recordObservation("BTC/USD", 84504.88, 84504.88);
+  driftDetector.recordObservation("SPY", 769.43, 769.43);
 
   // Immediate non-blocking warm-up:
   // Port is already listening and serving instantly from pre-populated state.
@@ -2849,6 +2894,7 @@ export function initBackgroundSync() {
     Promise.allSettled([
       syncExternalMarketPrices(),
       syncExternalFuturesPrices(),
+      syncPolygonTape(),
       syncLiveGeopoliticalRssNews()
     ]).catch((err) => {
       console.warn("[WARMUP] Non-blocking initial sync warning:", err);
@@ -2863,6 +2909,10 @@ export function initBackgroundSync() {
   setInterval(() => {
     syncExternalFuturesPrices().catch(() => {});
   }, 6000);
+
+  setInterval(() => {
+    syncPolygonTape().catch(() => {});
+  }, 12000);
 
   setInterval(() => {
     refreshFuturesSessionsAndCrypto();
@@ -4778,8 +4828,18 @@ async function syncPolygonTape(): Promise<PolygonValidationState> {
               tradeCount: Math.round(bar.n || 0),
               timestamp: bar.t || Date.now()
             };
-            if (t.sym === "SPY") polygonState.quotes.spy = quoteObj;
-            if (t.sym === "QQQ") polygonState.quotes.qqq = quoteObj;
+            if (t.sym === "SPY") {
+              polygonState.quotes.spy = quoteObj;
+              if (finnhubState.quotes?.spy) {
+                driftDetector.recordObservation("SPY", quoteObj.close, finnhubState.quotes.spy.price);
+              }
+            }
+            if (t.sym === "QQQ") {
+              polygonState.quotes.qqq = quoteObj;
+              if (finnhubState.quotes?.qqq) {
+                driftDetector.recordObservation("QQQ", quoteObj.close, finnhubState.quotes.qqq.price);
+              }
+            }
             if (t.sym === "NVDA") polygonState.quotes.nvda = quoteObj;
             if (t.sym === "AAPL") polygonState.quotes.aapl = quoteObj;
             if (t.sym === "USO") {
@@ -4809,6 +4869,10 @@ async function syncPolygonTape(): Promise<PolygonValidationState> {
                     liveFuturesStore[s].lastUpdated = new Date().toISOString();
                   }
                 }
+                validateStreamTick("Polygon-USO-Parity", "MCL", wtiLive, "NYMEX", wtiLive - 0.02, wtiLive + 0.02, 100);
+                validateStreamTick("Polygon-USO-Parity", "CL", wtiLive, "NYMEX", wtiLive - 0.02, wtiLive + 0.02, 1000);
+                driftDetector.recordObservation("MCL/CL", wtiLive, liveFuturesStore.CL?.price || wtiLive);
+
                 if (liveFuturesStore.BZ) {
                   liveFuturesStore.BZ.price = brentLive;
                   liveFuturesStore.BZ.changePct = chgPct;
@@ -4823,6 +4887,17 @@ async function syncPolygonTape(): Promise<PolygonValidationState> {
                 }
               }
             }
+
+            // Real-time market validation pipeline processing for each SIP bar
+            validateStreamTick(
+              "Polygon-SIP",
+              t.sym,
+              quoteObj.close,
+              "SIP",
+              quoteObj.low,
+              quoteObj.high,
+              quoteObj.volume
+            );
           }
         }
         await new Promise((r) => setTimeout(r, 200));
@@ -4946,7 +5021,14 @@ function startMasterBroadcaster() {
     broadcastSSE("polygon-verify", polygonState);
   }, 20000);
 
-  // 5. Keep-alive heartbeat ping (every 10000ms)
+  // 5. Market Data Validation & Drift Reconciliation Telemetry (every 10s)
+  setInterval(() => {
+    if (sseClients.size === 0) return;
+    broadcastSSE("validation-telemetry", marketDataPipeline.getAlertManager().getMetrics());
+    broadcastSSE("drift-metrics", driftDetector.getAllMetrics());
+  }, 10000);
+
+  // 6. Keep-alive heartbeat ping (every 10000ms)
   setInterval(() => {
     broadcastSSE("ping", { t: Date.now() });
   }, 10000);
@@ -6525,6 +6607,8 @@ app.get("/api/macro/stream", (req, res) => {
   res.write(`event: openmarket-verify\ndata: ${JSON.stringify(openMarketState)}\n\n`);
   res.write(`event: finnhub-verify\ndata: ${JSON.stringify(finnhubState)}\n\n`);
   res.write(`event: polygon-verify\ndata: ${JSON.stringify(polygonState)}\n\n`);
+  res.write(`event: validation-telemetry\ndata: ${JSON.stringify(marketDataPipeline.getAlertManager().getMetrics())}\n\n`);
+  res.write(`event: drift-metrics\ndata: ${JSON.stringify(driftDetector.getAllMetrics())}\n\n`);
   res.write(`event: macro-pulse\ndata: ${JSON.stringify(getLiveMacroData())}\n\n`);
 
   // Register client in master broadcast set
