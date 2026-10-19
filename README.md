@@ -328,10 +328,11 @@ The platform is engineered with a **Dual-Mode Full-Stack Architecture**:
    - **Backend API**: All 50+ institutional endpoints (`/api/futures`, `/api/macro/*`, `/api/orderflow/*`, `/api/polygon/*`, `/api/v1/*`) are routed to the Serverless Function at `/api/index.ts`, executing the Express backend on-demand with sub-50ms cold starts.
    - **Deploy on Vercel**:
      1. Import this GitHub repository into your Vercel Dashboard.
-     2. Framework Preset: **Vite** (auto-detected).
-     3. Build Command: `npm run build` (auto-detected from `vercel.json`).
-     4. Output Directory: `dist` (auto-detected from `vercel.json`).
-     5. Environment Variables:
+     2. Framework Preset: **Vite** (explicitly selected in `vercel.json`).
+     3. Install Command: `npm ci` (explicitly selected in `vercel.json`; prevents Vercel from treating the separate Python backend requirements as the frontend runtime).
+     4. Build Command: `npm run build` (configured in `vercel.json`).
+     5. Output Directory: `dist` (configured in `vercel.json`).
+     6. Environment Variables:
         - `POLYGON_API_KEY` (SIP consolidated tape & energy parity)
         - `POLYGON_ACCESS_KEY_ID` (Institutional account reference)
         - `OPENMARKET_API_KEY` (OpenMarket consensus verification)
@@ -340,7 +341,7 @@ The platform is engineered with a **Dual-Mode Full-Stack Architecture**:
         - `FIREBASE_PROJECT_ID` (Optional; defaults to the project's Firebase config)
         - `INTERNAL_SERVICE_TOKEN` (Strong shared secret when routing to the Python backend)
         - `PYTHON_BACKEND_URL` (Optional: if routing SEC/FRED to external Render/Railway service)
-     6. Click **Deploy**. Both the client and serverless API endpoints will deploy in unified lockstep.
+     7. Click **Deploy**. The Vite client and TypeScript serverless API deploy together. The Python backend is a separate service.
 
 2. **Persistent Container Hosting (Docker / Railway / Render / Google Cloud Run / VPS)**:
    - For long-lived persistent streaming connections (continuous SSE push streams & background schedulers):
