@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { apiFetch, isVercelRuntime } from "../api";
 import {
   TrendingUp,
   Activity,
@@ -180,7 +181,7 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
     if (isManual) setIsRefreshing(true);
     try {
       const endpoint = isManual ? "/api/futures/refresh" : "/api/futures";
-      const res = await fetch(endpoint);
+      const res = await apiFetch(endpoint);
       if (res.ok) {
         const data = await res.json();
         if (data && data.contracts) {
@@ -210,7 +211,7 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
   const handleCalibrateMcl = useCallback(async (customPrice?: number) => {
     setIsCalibratingMcl(true);
     try {
-      const res = await fetch("/api/futures/calibrate-mcl", {
+      const res = await apiFetch("/api/futures/calibrate-mcl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -245,6 +246,7 @@ export const FuturesView: React.FC<FuturesViewProps> = ({
 
   // Connect to direct institutional futures SSE stream (/api/futures/stream)
   useEffect(() => {
+    if (isVercelRuntime) return;
     let es: EventSource | null = null;
     try {
       es = new EventSource("/api/futures/stream");

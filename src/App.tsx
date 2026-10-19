@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from "react";
-import { MacroDataState, UserSession, ActiveTab, Currency, ClearanceTier } from "./types";
+import { MacroDataState, UserSession, ActiveTab, Currency } from "./types";
 import { initialMacroData } from "./data/mockMacroData";
 import { HeaderTicker } from "./components/HeaderTicker";
 import { Navbar } from "./components/Navbar";
@@ -35,10 +35,9 @@ import {
   doc,
   getDoc,
   updateDoc,
-  syncUserProfile,
-  DEFAULT_DESK_ACCESS,
-  updateUserTierInFirestore
+  getAuthorizedSession
 } from "./firebase";
+import { apiFetch } from "./api";
 
 export default function App() {
   const [macroData, setMacroData] = useState<MacroDataState>(initialMacroData);
@@ -47,65 +46,24 @@ export default function App() {
   const [isAutoRefreshActive, setIsAutoRefreshActive] = useState(true);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isTierModalOpen, setIsTierModalOpen] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [hasMacroApiSnapshot, setHasMacroApiSnapshot] = useState(false);
 
   // Direct Institutional Streaming Gateway (Level 2 Server-Sent Events Push Channel)
   const handleStreamData = useCallback((streamData: MacroDataState) => {
     if (streamData && streamData.engines && Array.isArray(streamData.tickers)) {
       setMacroData(streamData);
+      setHasMacroApiSnapshot(true);
     }
   }, []);
 
   const streamInfo = useRealtimeStream(handleStreamData);
 
-  // Switch Tier clearance dynamically with instant Firestore persistence
-  const handleSwitchTier = async (newTier: ClearanceTier) => {
-    const uid = userSession.uid || auth.currentUser?.uid || "usr-founding-persist";
-    try {
-      const { tier, deskCode, deskAccess } = await updateUserTierInFirestore(uid, newTier);
-      const updatedSession: UserSession = {
-        ...userSession,
-        tier,
-        passcode: deskCode,
-        deskAccess
-      };
-      setUserSession(updatedSession);
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(updatedSession));
-      } catch (err) {}
-    } catch (err) {
-      console.warn("Failed to switch tier:", err);
-      // Fallback local update
-      const updatedSession: UserSession = {
-        ...userSession,
-        tier: newTier
-      };
-      setUserSession(updatedSession);
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(updatedSession));
-      } catch (e) {}
-    }
-  };
-
-  // Auth State: checks sessionStorage for active session
-  const [userSession, setUserSession] = useState<UserSession>(() => {
-    try {
-      const saved = sessionStorage.getItem("smc_authenticated_session");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.isAuthenticated) {
-          return parsed;
-        }
-      }
-    } catch (err) {
-      // ignore
-    }
-    // Gated by default: user must enter login credentials or sign in with Google
-    return {
-      isAuthenticated: false,
-      uid: "",
-      email: "",
-      tier: "Founding Member"
-    };
+  const [userSession, setUserSession] = useState<UserSession>({
+    isAuthenticated: false,
+    uid: "",
+    email: "",
+    tier: "Guest"
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -118,57 +76,38 @@ export default function App() {
   // Firebase Auth State Listener & Cloud Firestore Sync
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Only auto-sync profile if the user explicitly authenticated in this active browser session
-      const hasActiveSession = sessionStorage.getItem("smc_authenticated_session");
-      if (firebaseUser && hasActiveSession) {
+      if (!firebaseUser) {
+        setUserSession({ isAuthenticated: false, uid: "", email: "", tier: "Guest" });
+        setIsAuthReady(true);
+        return;
+      }
+
+      try {
+        const session = await getAuthorizedSession(firebaseUser);
+        setUserSession(session);
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {
             const profile = snap.data();
-            const session: UserSession = {
-              isAuthenticated: true,
-              uid: firebaseUser.uid,
-              email: profile.email || firebaseUser.email || "tradeinmotions@gmail.com",
-              name: profile.displayName || firebaseUser.displayName || (profile.email ? profile.email.split("@")[0] : "Institutional Trader"),
-              tier: profile.tier || "Founding Member",
-              role: profile.role || "founding_member",
-              passcode: profile.deskCode || "SMC-FOUNDING-2026",
-              deskAccess: profile.deskAccess || DEFAULT_DESK_ACCESS,
-              loginTime: new Date().toLocaleTimeString()
-            };
-            setUserSession(session);
-            try {
-              sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-            } catch (e) {}
-
             if (typeof profile.isCalmMode === "boolean") {
               setIsCalmMode(profile.isCalmMode);
             }
             if (profile.currency === "USD" || profile.currency === "EUR") {
               setCurrency(profile.currency);
             }
-          } else {
-            const profile = await syncUserProfile(firebaseUser);
-            const session: UserSession = {
-              isAuthenticated: true,
-              uid: firebaseUser.uid,
-              email: profile.email,
-              name: profile.displayName,
-              tier: profile.tier,
-              role: profile.role,
-              passcode: profile.deskCode,
-              deskAccess: profile.deskAccess,
-              loginTime: new Date().toLocaleTimeString()
-            };
-            setUserSession(session);
-            try {
-              sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-            } catch (e) {}
           }
         } catch (err) {
           console.warn("Firestore profile sync error:", err);
         }
+      } catch (err) {
+        console.warn("Firebase account does not have provisioned terminal access:", err);
+        setUserSession({ isAuthenticated: false, uid: "", email: "", tier: "Guest" });
+        if (auth.currentUser?.uid === firebaseUser.uid) {
+          void signOut(auth).catch((signOutError) => console.error("Failed to sign out unprovisioned account:", signOutError));
+        }
+      } finally {
+        setIsAuthReady(true);
       }
     });
 
@@ -200,9 +139,8 @@ export default function App() {
       localStorage.setItem("smc_currency", newCurrency);
     } catch (err) {}
     if (userSession.uid) {
-      try {
-        updateDoc(doc(db, "users", userSession.uid), { currency: newCurrency }).catch(() => {});
-      } catch (e) {}
+      void updateDoc(doc(db, "users", userSession.uid), { currency: newCurrency })
+        .catch((error) => console.warn("Failed to save currency preference:", error));
     }
   };
 
@@ -213,9 +151,8 @@ export default function App() {
         localStorage.setItem("smc_calm_mode", String(next));
       } catch (err) {}
       if (userSession.uid) {
-        try {
-          updateDoc(doc(db, "users", userSession.uid), { isCalmMode: next }).catch(() => {});
-        } catch (e) {}
+        void updateDoc(doc(db, "users", userSession.uid), { isCalmMode: next })
+          .catch((error) => console.warn("Failed to save calm-mode preference:", error));
       }
       return next;
     });
@@ -228,12 +165,13 @@ export default function App() {
       setRefreshCount((c) => c + 1);
     }
     try {
-      const res = await fetch("/api/macro/live-pulse");
+      const res = await apiFetch("/api/macro/live-pulse");
       if (res.ok) {
         const json = await res.json();
         const nextData = json.engines ? json : (json.data || json);
         if (nextData && nextData.engines && Array.isArray(nextData.tickers)) {
           setMacroData(nextData);
+          setHasMacroApiSnapshot(true);
           return;
         }
       }
@@ -243,7 +181,11 @@ export default function App() {
       if (isManual) setIsRefreshing(false);
     }
 
-    // Client-side fallback dynamic tick if server is in offline cold start
+    if (!import.meta.env.DEV || new URLSearchParams(window.location.search).get("demo") !== "true") {
+      return;
+    }
+
+    // Dynamic fallback is available only in explicitly enabled local demo mode.
     setMacroData((prev) => {
       const deltaYen = Number((Math.random() * 0.08 - 0.04).toFixed(2));
       const newYen = Number((prev.engines.yenIntervention.spot + deltaYen).toFixed(2));
@@ -600,11 +542,6 @@ export default function App() {
 
   const handleLoginSuccess = (session: UserSession) => {
     setUserSession(session);
-    try {
-      sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-    } catch (err) {
-      // storage disabled
-    }
   };
 
   const handleLogout = async () => {
@@ -622,11 +559,19 @@ export default function App() {
     setUserSession({
       isAuthenticated: false,
       email: "",
-      tier: "Founding Member"
+      tier: "Guest"
     });
   };
 
   // If unauthenticated, display the full-screen Macro Terminal Login Screen
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-[#070C14] flex items-center justify-center text-[#8292A6] font-mono-data text-xs uppercase tracking-wider">
+        Verifying terminal credentials...
+      </div>
+    );
+  }
+
   if (!userSession.isAuthenticated) {
     return (
       <div id="smc-app-root" className="min-h-screen bg-[#070C14] text-[#EDE9DE] font-sans antialiased relative">
@@ -654,6 +599,14 @@ export default function App() {
           isCalmMode={isCalmMode}
           onToggleCalmMode={toggleCalmMode}
         />
+
+        <div className="px-4 py-1.5 text-center text-[9px] sm:text-[10px] font-mono-data tracking-wide bg-[#111B2A] border-b border-white/5 text-[#BAC7D5]">
+          {hasMacroApiSnapshot
+            ? "MACRO API SNAPSHOT · Provider observation timestamps and exchange entitlements are not certified by this status."
+            : import.meta.env.DEV && new URLSearchParams(window.location.search).get("demo") === "true"
+              ? "SIMULATED DEMO DATA · Values are generated locally and are not market observations."
+              : "ILLUSTRATIVE SEED DATA · Waiting for a valid macro API response; values are not verified live market data."}
+        </div>
 
         {/* 2. Top Navigation Bar */}
         <Navbar
@@ -758,7 +711,6 @@ export default function App() {
             isOpen={isTierModalOpen}
             onClose={() => setIsTierModalOpen(false)}
             userSession={userSession}
-            onSwitchTier={handleSwitchTier}
           />
         )}
       </Suspense>

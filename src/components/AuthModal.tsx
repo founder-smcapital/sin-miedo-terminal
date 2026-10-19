@@ -1,18 +1,14 @@
 import React, { useState } from "react";
-import { UserSession, ClearanceTier } from "../types";
-import { X, Lock, Mail, Key, Shield, ShieldCheck, CheckCircle2, Award, Sparkles, Building2, Database } from "lucide-react";
+import { UserSession } from "../types";
+import { X, Lock, Mail, ShieldCheck, Database } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
   auth,
   googleProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInAnonymously,
-  syncUserProfile,
-  DEFAULT_DESK_ACCESS,
-  TIER_PASSCODES,
-  TIER_DESK_ACCESS
+  signOut,
+  getAuthorizedSession
 } from "../firebase";
 
 interface AuthModalProps {
@@ -28,17 +24,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [tier, setTier] = useState<ClearanceTier>("Founding Member");
-  const [passcode, setPasscode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
 
   if (!isOpen) return null;
-
-  const handleSelectTier = (selectedTier: ClearanceTier) => {
-    setTier(selectedTier);
-  };
 
   const triggerConfetti = () => {
     try {
@@ -58,45 +48,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
-      setStatusMessage("Syncing user profile with Firestore database...");
-      const profile = await syncUserProfile(userCredential.user, tier, passcode);
-
+      setStatusMessage("Verifying server-provisioned desk clearance...");
+      const session = await getAuthorizedSession(userCredential.user);
       triggerConfetti();
-
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: userCredential.user.uid,
-        email: profile.email,
-        name: profile.displayName || userCredential.user.displayName || "Institutional Partner",
-        tier: profile.tier,
-        role: profile.role,
-        passcode: profile.deskCode,
-        deskAccess: profile.deskAccess || DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (err) {}
-
-      setIsSubmitting(false);
       onLoginSuccess(session);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Google Auth error:", err);
-      setIsSubmitting(false);
-      if (err.code === "auth/popup-closed-by-user") {
+      if (typeof err === "object" && err !== null && "code" in err && err.code === "auth/popup-closed-by-user") {
         setErrorMessage("Authentication was cancelled.");
       } else {
-        setErrorMessage(err.message || "Failed to authenticate via Google.");
+        setErrorMessage(err instanceof Error ? err.message : "Authentication failed. Verify your account and try again.");
       }
+      if (auth.currentUser) void signOut(auth).catch((signOutError) => console.error("Failed to clear unprovisioned session:", signOutError));
+    } finally {
+      setIsSubmitting(false);
+      setStatusMessage("");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setErrorMessage("Please enter an authorized institutional email.");
+    if (!email.trim() || !password) {
+      setErrorMessage("Enter your institutional email and password.");
       return;
     }
 
@@ -105,75 +79,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setStatusMessage("Connecting to Firebase Auth & Firestore...");
 
     try {
-      let firebaseUser: any = null;
-
-      try {
-        const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
-        firebaseUser = userCred.user;
-      } catch (signInErr: any) {
-        if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential") {
-          try {
-            const createCred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-            firebaseUser = createCred.user;
-          } catch (createErr: any) {
-            const anonCred = await signInAnonymously(auth);
-            firebaseUser = anonCred.user;
-          }
-        } else {
-          const anonCred = await signInAnonymously(auth);
-          firebaseUser = anonCred.user;
-        }
-      }
-
-      setStatusMessage("Persisting institutional desk clearance to Firestore...");
-      let profile;
-      if (firebaseUser) {
-        profile = await syncUserProfile(
-          { ...firebaseUser, email: email.trim() },
-          tier,
-          passcode
-        );
-      }
-
+      const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      setStatusMessage("Verifying server-provisioned desk clearance...");
+      const session = await getAuthorizedSession(credential.user);
       triggerConfetti();
-
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: firebaseUser?.uid || "usr-auth-persist",
-        email: email.trim(),
-        name: email.split("@")[0] || "Authorized Trader",
-        tier: profile?.tier || tier,
-        role: profile?.role || "founding_member",
-        passcode: profile?.deskCode || passcode,
-        deskAccess: profile?.deskAccess || DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (err) {}
-
-      setIsSubmitting(false);
       onLoginSuccess(session);
       onClose();
-    } catch (err: any) {
-      console.warn("Auth persistence notice:", err);
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: "usr-fallback-local",
-        email: email.trim(),
-        name: email.split("@")[0] || "Authorized Trader",
-        tier,
-        passcode,
-        deskAccess: DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (e) {}
+    } catch (err) {
+      console.warn("Institutional authentication failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "Authentication failed. Verify your account and try again.");
+      if (auth.currentUser) void signOut(auth).catch((signOutError) => console.error("Failed to clear unprovisioned session:", signOutError));
+    } finally {
       setIsSubmitting(false);
-      onLoginSuccess(session);
-      onClose();
+      setStatusMessage("");
     }
   };
 
@@ -197,7 +115,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Sin Miedo Capital
               </h3>
               <p className="text-[9px] font-mono-data text-[#8292A6]">
-                FIRESTORE PERSISTENT CLIENT AUTHENTICATION
+                SERVER-PROVISIONED DESK AUTHENTICATION
               </p>
             </div>
           </div>
@@ -226,79 +144,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <span>{statusMessage}</span>
             </div>
           )}
-
-          {/* Tier Selection Pills */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[10px] font-mono-data text-[#8292A6] uppercase tracking-wider">
-                Select Client Tier / Clearance
-              </label>
-              <span className="text-[9px] font-mono-data text-[#B08D57]">
-                Passcode Synced
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                type="button"
-                id="tier-founding-btn"
-                onClick={() => handleSelectTier("Founding Member")}
-                className={`py-2 px-1 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
-                  tier === "Founding Member"
-                    ? "bg-[#B08D57] border-[#B08D57] text-[#0A111C] font-bold shadow-md ring-1 ring-[#B08D57]"
-                    : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#B08D57]/40"
-                }`}
-              >
-                <Award className={`w-3.5 h-3.5 ${tier === "Founding Member" ? "text-[#0A111C]" : "text-[#B08D57]"}`} />
-                <span className="text-[10px] font-bold leading-tight">Founding</span>
-                <span className={`text-[8.5px] ${tier === "Founding Member" ? "text-[#0A111C]/90 font-medium" : "text-[#B08D57]"}`}>All-Access</span>
-              </button>
-
-              <button
-                type="button"
-                id="tier-allocator-btn"
-                onClick={() => handleSelectTier("Professional Allocator")}
-                className={`py-2 px-1 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
-                  tier === "Professional Allocator"
-                    ? "bg-[#64748B] border-[#94A3B8] text-[#0A111C] font-bold shadow-md ring-1 ring-[#94A3B8]"
-                    : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#64748B]/40"
-                }`}
-              >
-                <Shield className={`w-3.5 h-3.5 ${tier === "Professional Allocator" ? "text-[#0A111C]" : "text-[#94A3B8]"}`} />
-                <span className="text-[10px] font-bold leading-tight">Tier I: Allocator</span>
-                <span className={`text-[8.5px] ${tier === "Professional Allocator" ? "text-[#0A111C]/90 font-medium" : "text-[#8292A6]"}`}>Core Prop</span>
-              </button>
-
-              <button
-                type="button"
-                id="tier-institutional-btn"
-                onClick={() => handleSelectTier("Institutional Desk")}
-                className={`py-2 px-1 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
-                  tier === "Institutional Desk" || tier === "Institutional Alpha"
-                    ? "bg-[#38BDF8] border-[#38BDF8] text-[#0A111C] font-bold shadow-md ring-1 ring-[#38BDF8]"
-                    : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#38BDF8]/40"
-                }`}
-              >
-                <Building2 className={`w-3.5 h-3.5 ${tier === "Institutional Desk" || tier === "Institutional Alpha" ? "text-[#0A111C]" : "text-[#38BDF8]"}`} />
-                <span className="text-[10px] font-bold leading-tight">Tier II: Inst.</span>
-                <span className={`text-[8.5px] ${tier === "Institutional Desk" || tier === "Institutional Alpha" ? "text-[#0A111C]/90 font-medium" : "text-[#38BDF8]"}`}>Hedge Funds</span>
-              </button>
-
-              <button
-                type="button"
-                id="tier-sovereign-btn"
-                onClick={() => handleSelectTier("Sovereign Advisory")}
-                className={`py-2 px-1 rounded-lg border text-center transition-all text-xs font-mono-data flex flex-col items-center gap-0.5 cursor-pointer ${
-                  tier === "Sovereign Advisory" || tier === "Sovereign Desk"
-                    ? "bg-[#C084FC] border-[#C084FC] text-[#0A111C] font-bold shadow-md ring-1 ring-[#C084FC]"
-                    : "bg-[#0B1019] border-[#222C3D] text-[#8292A6] hover:text-[#EDE9DE] hover:border-[#C084FC]/40"
-                }`}
-              >
-                <Sparkles className={`w-3.5 h-3.5 ${tier === "Sovereign Advisory" || tier === "Sovereign Desk" ? "text-[#0A111C]" : "text-[#C084FC]"}`} />
-                <span className="text-[10px] font-bold leading-tight">Tier III: Sov.</span>
-                <span className={`text-[8.5px] ${tier === "Sovereign Advisory" || tier === "Sovereign Desk" ? "text-[#0A111C]/90 font-medium" : "text-[#C084FC]"}`}>Dark Fleet</span>
-              </button>
-            </div>
-          </div>
 
           {/* Email input */}
           <div>
@@ -338,27 +183,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          {/* Tier Passcode */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[10px] font-mono-data text-[#8292A6] uppercase tracking-wider">
-                Encrypted Tier Passcode
-              </label>
-              <span className="text-[9px] text-[#B08D57] font-mono-data">Verified Key</span>
-            </div>
-            <div className="relative">
-              <Key className="w-4 h-4 absolute left-3 top-3 text-[#B08D57]" />
-              <input
-                id="auth-passcode-input"
-                type="text"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="e.g. SMC-FOUNDING-2026"
-                className="w-full bg-black/50 border border-[#B08D57]/20 focus:border-[#B08D57] rounded py-2 pl-9 pr-3 text-xs text-[#EDE9DE] outline-none font-mono-data transition-colors tracking-wider"
-              />
-            </div>
-          </div>
-
           {/* Submit Button */}
           <button
             id="auth-submit-login-btn"
@@ -371,7 +195,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>Enter Authenticated Portal (Firestore)</span>
+                <span>Enter Authorized Portal</span>
               </>
             )}
           </button>
@@ -416,7 +240,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Footer info */}
         <div className="px-6 py-2.5 bg-[#0E1A2B] border-t border-[#B08D57]/15 text-center text-[10px] text-[#8292A6] font-mono-data">
-          Connected to Cloud Firestore // gen-lang-client-0676230346
+          Access is provisioned by your terminal administrator
         </div>
       </div>
     </div>

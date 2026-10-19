@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiFetch } from "../api";
 import {
   Mail,
   Send,
@@ -109,7 +110,7 @@ Sent via Sin Miedo Capital Intelligence Terminal`;
 
     try {
       // 1. Submit to backend API to log ticket
-      const response = await fetch("/api/support/submit", {
+      const response = await apiFetch("/api/support/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

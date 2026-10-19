@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { MacroDataState, FlashAlert } from "../types";
+import { apiFetch } from "../api";
 import { WarRiskVolatilityChart } from "./WarRiskVolatilityChart";
 import { 
   Radio, 
@@ -83,7 +84,7 @@ export const PulseFeedView: React.FC<PulseFeedViewProps> = ({
   const handleSimulateBreakingStrikeAlert = async () => {
     try {
       setIsInjecting(true);
-      const res = await fetch("/api/macro/pulse/inject-alert", {
+      const res = await apiFetch("/api/macro/pulse/inject-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -107,7 +108,7 @@ export const PulseFeedView: React.FC<PulseFeedViewProps> = ({
   const handleSimulatePipelineShutdownAlert = async () => {
     try {
       setIsInjecting(true);
-      const res = await fetch("/api/macro/pulse/inject-alert", {
+      const res = await apiFetch("/api/macro/pulse/inject-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

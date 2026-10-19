@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { apiFetch } from "../api";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -27,7 +28,6 @@ import {
   ArrowDownRight,
   Sparkles,
   Info,
-  Radio,
   RefreshCw,
 } from "lucide-react";
 import { MacroDataState } from "../types";
@@ -68,8 +68,6 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
   const [showTermStructure, setShowTermStructure] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [selectedSpikeTime, setSelectedSpikeTime] = useState<string | null>(null);
-  const [liveTickDelta, setLiveTickDelta] = useState<number>(0);
-  const [pulseCount, setPulseCount] = useState<number>(0);
 
   // Live API ingestion state
   const [apiData, setApiData] = useState<{
@@ -83,21 +81,21 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
     lastSyncTimestamp: number;
     source: string;
     intradayPoints?: VixDataPoint[];
+    historyType?: "provider" | "illustrative";
+    quoteStatus?: "indicative" | "stale" | "unavailable";
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [secondsSinceSync, setSecondsSinceSync] = useState<number>(0);
 
   // Fetch real-time CBOE VIX intraday data from server
   const fetchVixIntraday = useCallback(async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
       const url = isManual ? "/api/macro/vix-refresh" : "/api/macro/vix-intraday";
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.intradayPoints) {
           setApiData(json);
-          setSecondsSinceSync(0);
         }
       }
     } catch (err) {
@@ -109,57 +107,29 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
     }
   }, []);
 
-  // Continuous polling every 4 seconds + local second counter
+  // Poll the provider-backed snapshot without manufacturing local quote updates.
   useEffect(() => {
     fetchVixIntraday(false);
     const pollInterval = setInterval(() => {
       fetchVixIntraday(false);
     }, 4000);
-    const secondTimer = setInterval(() => {
-      setSecondsSinceSync((s) => s + 1);
-    }, 1000);
     return () => {
       clearInterval(pollInterval);
-      clearInterval(secondTimer);
     };
   }, [fetchVixIntraday]);
 
   // Extract baseline VIX from macroData tickers or active API ingestion
   const vixTicker = macroData?.tickers?.find((t) => t.symbol === "VIX");
-  const baseLiveVix = apiData?.currentPrice ?? vixTicker?.price ?? 18.95;
-  const liveVix = parseFloat((baseLiveVix + liveTickDelta).toFixed(2));
-  const baseChangePct = apiData?.changePct ?? (vixTicker?.change ?? -1.20);
-  const liveChangePct = baseChangePct + (liveTickDelta * 0.35);
-
-  // Periodic real-time micro-simulation for the live terminal feel
-  useEffect(() => {
-    if (isCalmMode) return;
-    const interval = setInterval(() => {
-      // Subtle micro-fluctuations (±0.03 to 0.06) around the live price
-      const delta = (Math.random() - 0.48) * 0.10;
-      setLiveTickDelta((prev) => {
-        const next = prev + delta;
-        return Math.max(-0.35, Math.min(0.35, parseFloat(next.toFixed(2))));
-      });
-      setPulseCount((c) => c + 1);
-    }, 3800);
-    return () => clearInterval(interval);
-  }, [isCalmMode]);
+  const hasUsableQuote = apiData?.quoteStatus === "indicative" || apiData?.quoteStatus === "stale";
+  const liveVix = hasUsableQuote ? apiData.currentPrice : (vixTicker?.price ?? 18.95);
+  const baseLiveVix = liveVix;
+  const baseChangePct = hasUsableQuote ? apiData.changePct : (vixTicker?.change ?? -1.20);
+  const liveChangePct = baseChangePct;
 
   // High-frequency intraday volatility time-series data (Dynamic & Non-Stale)
   const intradayData: VixDataPoint[] = useMemo(() => {
     if (apiData?.intradayPoints && apiData.intradayPoints.length >= 6) {
-      return apiData.intradayPoints.map((pt, i, arr) => {
-        if (i === arr.length - 1) {
-          return {
-            ...pt,
-            vix: liveVix,
-            vvix: Number((98.0 + (liveVix - 17.5) * 4.8).toFixed(1)),
-            deskNote: `Active SMC desk live volatility tick feed; pricing ${(liveVix / Math.sqrt(252)).toFixed(2)}% implied daily S&P move`
-          };
-        }
-        return pt;
-      });
+      return apiData.intradayPoints;
     }
 
     // Dynamic fallback anchored to the ACTUAL CURRENT TIME (now)
@@ -482,10 +452,10 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
             </span>
             <span className="text-[10px] font-mono-data font-bold tracking-[0.2em] text-[#E5C794] uppercase flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-[#B08D57]" />
-              Real-Time CBOE VIX Volatility Index // Intraday Spikes Terminal
+              VIX Index Snapshot // Intraday Volatility Analysis
             </span>
             <span className="text-[9px] font-mono-data text-[#8292A6] px-1.5 py-0.5 rounded bg-black/40 border border-white/5 hidden sm:inline">
-              TICK #{pulseCount}
+              {apiData ? "API SNAPSHOT" : "SEED DATA"}
             </span>
           </div>
 
@@ -557,14 +527,14 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
                 rows,
                 metaComments: [
                   "SIN MIEDO CAPITAL // CBOE VIX INTRADAY SPIKES & TERM STRUCTURE",
-                  `Live Spot VIX: ${liveVix.toFixed(2)} (${liveChangePct >= 0 ? "+" : ""}${liveChangePct.toFixed(2)}%)`,
+                  `VIX Snapshot: ${liveVix.toFixed(2)} (${liveChangePct >= 0 ? "+" : ""}${liveChangePct.toFixed(2)}%)`,
                   `Active View: ${timeframe}`,
                   `Current Regime: ${currentRegime.label}`,
                 ],
               };
             }}
             onExportPdf={() => {
-              exportVixChartPdf(liveVix, timeframe, pulseCount);
+              exportVixChartPdf(liveVix, timeframe, apiData?.lastSyncTimestamp ?? 0);
             }}
           />
 
@@ -581,27 +551,26 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
         </div>
       </div>
 
-      {/* Real-Time Live Ingestion & Freshness Telemetry Strip */}
+      {/* Quote source and chart-history classification */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 my-3 rounded-lg bg-[#070D17]/80 border border-[#B08D57]/25 text-[10px] font-mono-data">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-            </span>
-            <span className="tracking-wider uppercase">CBOE DIRECT LIVE FEED</span>
+          <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+            <Info className="w-3 h-3" />
+            <span className="tracking-wider uppercase">{hasUsableQuote ? "YAHOO FINANCE ^VIX SNAPSHOT" : "ILLUSTRATIVE SEED QUOTE"}</span>
           </div>
           <span className="text-[#5A687C] hidden sm:inline">|</span>
           <span className="text-[#BAC7D5]">
-            UPDATED: <strong className="text-[#FFFFFF] font-bold">{apiData?.lastSync ? new Date(apiData.lastSyncTimestamp).toLocaleTimeString() : new Date().toLocaleTimeString()}</strong> ({secondsSinceSync}s ago)
+            API CHECKED: <strong className="text-[#FFFFFF] font-bold">{apiData?.lastSync ? new Date(apiData.lastSyncTimestamp).toLocaleTimeString() : "NOT RECEIVED"}</strong>
           </span>
           <span className="text-[#5A687C] hidden md:inline">|</span>
-          <span className="text-emerald-400/90 font-bold hidden md:inline">
-            ● NOT STALE (STREAMING ACTIVE)
+          <span className="text-amber-300 font-bold hidden md:inline">
+            {hasUsableQuote && timeframe === "1D" && apiData?.historyType === "provider"
+              ? "PROVIDER VIX PRICES · RV / VVIX OVERLAYS MODELED"
+              : "ILLUSTRATIVE CHART HISTORY"}
           </span>
           <span className="text-[#5A687C] hidden lg:inline">|</span>
-          <span className="text-[#8292A6] text-[9.5px] hidden lg:inline">
-            CYCLE: 4.0s SYNC
+          <span className="text-[#8292A6] text-[9.5px] hidden lg:inline truncate max-w-[240px]" title={apiData?.source}>
+            {hasUsableQuote ? apiData?.source : apiData?.source || "No provider response"}
           </span>
         </div>
 
@@ -611,7 +580,7 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
             onClick={() => fetchVixIntraday(true)}
             disabled={isRefreshing}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#B08D57]/20 hover:bg-[#B08D57]/30 border border-[#B08D57]/45 text-[#E5C794] transition-all cursor-pointer font-bold active:scale-95 disabled:opacity-50"
-            title="Force immediate real-time sync of CBOE VIX prices and intraday series"
+            title="Refresh the VIX snapshot and chart data"
           >
             <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-[#FFFFFF]" : ""}`} />
             <span>{isRefreshing ? "SYNCING..." : "FORCE SYNC"}</span>
@@ -621,12 +590,12 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
 
       {/* 2. Quantitative Key Metrics Bar (High-Contrast Editorial Tiles - Protected Against Overlap) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2.5 mb-3.5">
-        {/* Metric 1: Live Spot VIX */}
+        {/* Metric 1: VIX snapshot */}
         <div className="bg-black/50 border border-[#B08D57]/30 p-2.5 rounded-lg space-y-1 min-w-0 overflow-hidden shadow-sm">
           <div className="flex items-center justify-between text-[9.5px] font-mono-data text-[#8292A6]">
             <span>SPOT VIX</span>
-            <span className="flex items-center gap-1 text-[#10B981]">
-              <Radio className="w-2.5 h-2.5 animate-pulse" /> LIVE
+            <span className="flex items-center gap-1 text-amber-300">
+              <Info className="w-2.5 h-2.5" /> {hasUsableQuote ? "SNAPSHOT" : "SEED"}
             </span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -639,11 +608,6 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
               {liveChangePct >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {liveChangePct >= 0 ? `+${liveChangePct.toFixed(2)}%` : `${liveChangePct.toFixed(2)}%`}
             </span>
-            {liveTickDelta !== 0 && (
-              <span className={`text-[8.5px] font-mono-data ${liveTickDelta > 0 ? "text-emerald-400" : "text-amber-400"}`}>
-                ({liveTickDelta > 0 ? "+" : ""}{liveTickDelta.toFixed(2)})
-              </span>
-            )}
           </div>
           <span className="text-[8.5px] font-mono-data text-[#8292A6] block truncate">
             Implied daily SPX: ±{(liveVix / Math.sqrt(252)).toFixed(2)}%
@@ -685,7 +649,7 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
           </span>
         </div>
 
-        {/* Metric 4: Realized Volatility Spread (VRP) */}
+        {/* Metric 4: Illustrative realized-volatility spread (VRP) */}
         <div className="bg-black/50 border border-[#B08D57]/20 p-2.5 rounded-lg space-y-1 min-w-0 overflow-hidden shadow-sm">
           <span className="text-[9.5px] font-mono-data text-[#8292A6] block">20D REALIZED VOL</span>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-mono-data">
@@ -695,7 +659,7 @@ export const VixVolatilityIndexChart: React.FC<VixVolatilityIndexChartProps> = (
             </span>
           </div>
           <span className="text-[8.5px] font-mono-data text-[#8292A6] block truncate">
-            Vol Risk Premium: Rich
+            Illustrative overlay; no realized-volatility feed
           </span>
         </div>
 

@@ -5,6 +5,9 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    define: {
+      __VERCEL_RUNTIME__: JSON.stringify(Boolean(process.env.VERCEL)),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

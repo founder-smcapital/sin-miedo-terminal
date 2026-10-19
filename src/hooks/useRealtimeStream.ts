@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { apiFetch, isVercelRuntime } from "../api";
 import { MacroDataState } from "../types";
 
 export interface L2DepthTick {
@@ -189,8 +190,6 @@ export interface StreamGatewayInfo {
   polygonData: PolygonValidationData | null;
   isPolygonVerifying: boolean;
   triggerPolygonVerify: () => Promise<void>;
-  configurePolygonKey: (key: string, accessKeyId?: string) => Promise<{ success: boolean; message: string; tier?: string; liveNbboEntitled?: boolean }>;
-  resetPolygonKey: () => Promise<{ success: boolean; message: string }>;
   validationTelemetry: MarketValidationMetrics | null;
   driftMetrics: DriftMetric[];
   isGeneratingSynthetic: boolean;
@@ -199,7 +198,7 @@ export interface StreamGatewayInfo {
 
 export function useRealtimeStream(
   onMacroUpdate?: (data: MacroDataState) => void,
-  initialMode: "stream" | "polling" = "stream"
+  initialMode: "stream" | "polling" = isVercelRuntime ? "polling" : "stream"
 ) {
   const [mode, setMode] = useState<"stream" | "polling">(initialMode);
   const [isConnected, setIsConnected] = useState(false);
@@ -232,48 +231,44 @@ export function useRealtimeStream(
     timestamp: Date.now()
   });
 
-  // Initial fetch of OpenMarket, Finnhub, Polygon & Validation status
-  useEffect(() => {
-    fetch("/api/openmarket/status")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setOpenMarketData(data);
-      })
-      .catch(() => {});
+  const refreshValidationStatus = useCallback(async () => {
+    const fetchJson = async (path: string) => {
+      try {
+        const response = await apiFetch(path);
+        return response.ok ? await response.json() : null;
+      } catch (error) {
+        console.warn(`Failed to fetch ${path}:`, error);
+        return null;
+      }
+    };
 
-    fetch("/api/finnhub/status")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setFinnhubData(data);
-      })
-      .catch(() => {});
+    const [openMarket, finnhub, polygon, telemetry, drift] = await Promise.all([
+      fetchJson("/api/openmarket/status"),
+      fetchJson("/api/finnhub/status"),
+      fetchJson("/api/polygon/status"),
+      fetchJson("/api/v1/validation/telemetry"),
+      fetchJson("/api/v1/reconciliation/drift-metrics")
+    ]);
 
-    fetch("/api/polygon/status")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setPolygonData(data);
-      })
-      .catch(() => {});
-
-    fetch("/api/v1/validation/telemetry")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && data.metrics) setValidationTelemetry(data.metrics);
-      })
-      .catch(() => {});
-
-    fetch("/api/v1/reconciliation/drift-metrics")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && data.metrics) setDriftMetrics(data.metrics);
-      })
-      .catch(() => {});
+    if (openMarket) setOpenMarketData(openMarket);
+    if (finnhub) setFinnhubData(finnhub);
+    if (polygon) setPolygonData(polygon);
+    if (telemetry?.metrics) setValidationTelemetry(telemetry.metrics);
+    if (drift?.metrics) setDriftMetrics(drift.metrics);
   }, []);
+
+  useEffect(() => {
+    void refreshValidationStatus();
+    if (mode !== "polling") return;
+
+    const timer = window.setInterval(() => void refreshValidationStatus(), 15000);
+    return () => window.clearInterval(timer);
+  }, [mode, refreshValidationStatus]);
 
   const triggerOpenMarketVerify = useCallback(async () => {
     setIsOpenMarketVerifying(true);
     try {
-      const res = await fetch("/api/openmarket/verify", { method: "POST" });
+      const res = await apiFetch("/api/openmarket/verify", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setOpenMarketData(data);
@@ -288,7 +283,7 @@ export function useRealtimeStream(
   const triggerFinnhubVerify = useCallback(async () => {
     setIsFinnhubVerifying(true);
     try {
-      const res = await fetch("/api/finnhub/verify", { method: "POST" });
+      const res = await apiFetch("/api/finnhub/verify", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setFinnhubData(data);
@@ -303,7 +298,7 @@ export function useRealtimeStream(
   const triggerPolygonVerify = useCallback(async () => {
     setIsPolygonVerifying(true);
     try {
-      const res = await fetch("/api/polygon/verify", { method: "POST" });
+      const res = await apiFetch("/api/polygon/verify", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setPolygonData(data);
@@ -315,60 +310,10 @@ export function useRealtimeStream(
     }
   }, []);
 
-  const configurePolygonKey = useCallback(async (key: string, accessKeyId?: string) => {
-    setIsPolygonVerifying(true);
-    try {
-      const res = await fetch("/api/polygon/configure", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: key, accessKeyId })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        // Refresh polygon status
-        const statRes = await fetch("/api/polygon/status");
-        if (statRes.ok) {
-          const statData = await statRes.json();
-          setPolygonData(statData);
-        }
-        return { 
-          success: true, 
-          message: data.message, 
-          tier: data.tier, 
-          liveNbboEntitled: data.liveNbboEntitled 
-        };
-      } else {
-        return { success: false, message: data.message || "Failed to configure Polygon key" };
-      }
-    } catch (err: any) {
-      return { success: false, message: err?.message || "Network error while validating key" };
-    } finally {
-      setIsPolygonVerifying(false);
-    }
-  }, []);
-
-  const resetPolygonKey = useCallback(async () => {
-    setIsPolygonVerifying(true);
-    try {
-      const res = await fetch("/api/polygon/reset-key", { method: "POST" });
-      const data = await res.json();
-      const statRes = await fetch("/api/polygon/status");
-      if (statRes.ok) {
-        const statData = await statRes.json();
-        setPolygonData(statData);
-      }
-      return { success: true, message: data.message || "Reverted to default Polygon feed" };
-    } catch (err: any) {
-      return { success: false, message: err?.message || "Failed to reset Polygon key" };
-    } finally {
-      setIsPolygonVerifying(false);
-    }
-  }, []);
-
   const triggerSyntheticSim = useCallback(async (preset = "VOLATILE_REGIME") => {
     setIsGeneratingSynthetic(true);
     try {
-      const res = await fetch("/api/v1/generator/generate", {
+      const res = await apiFetch("/api/v1/generator/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: "ES", preset, barCount: 15 })
@@ -376,7 +321,7 @@ export function useRealtimeStream(
       if (res.ok) {
         const data = await res.json();
         // Immediately refresh validation telemetry
-        const valRes = await fetch("/api/v1/validation/telemetry");
+        const valRes = await apiFetch("/api/v1/validation/telemetry");
         if (valRes.ok) {
           const valData = await valRes.json();
           if (valData.metrics) setValidationTelemetry(valData.metrics);
@@ -419,7 +364,7 @@ export function useRealtimeStream(
       eventSourceRef.current = null;
     }
 
-    if (mode !== "stream") {
+    if (mode !== "stream" || isVercelRuntime) {
       setIsConnected(false);
       return;
     }
@@ -584,8 +529,6 @@ export function useRealtimeStream(
       polygonData,
       isPolygonVerifying,
       triggerPolygonVerify,
-      configurePolygonKey,
-      resetPolygonKey,
       validationTelemetry,
       driftMetrics,
       isGeneratingSynthetic,
@@ -611,8 +554,6 @@ export function useRealtimeStream(
       polygonData,
       isPolygonVerifying,
       triggerPolygonVerify,
-      configurePolygonKey,
-      resetPolygonKey,
       validationTelemetry,
       driftMetrics,
       isGeneratingSynthetic,
@@ -622,4 +563,3 @@ export function useRealtimeStream(
     ]
   );
 }
-

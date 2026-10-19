@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { apiFetch } from "../../api";
 import { MacroNarrativeItem } from "../../types";
 import { initialMacroNarrativeWire } from "../../data/macroNarrativeData";
 import {
@@ -40,7 +41,7 @@ export const MacroNarrativeWireEngine: React.FC<MacroNarrativeWireEngineProps> =
   const syncWire = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch("/api/intelligence/macro-narrative-wire");
+      const res = await apiFetch("/api/intelligence/macro-narrative-wire");
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json.liveCentralBankItems) && json.liveCentralBankItems.length > 0) {

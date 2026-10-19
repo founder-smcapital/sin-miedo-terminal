@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { apiFetch } from "../api";
 import { GeopoliticalHeadline, SentimentGaugeData } from "../types";
 import {
   initialGeopoliticalHeadlines,
@@ -56,7 +57,7 @@ export async function fetchVerifiedFeed(force = false) {
   updateState(() => ({ isSyncingFeed: true }));
   try {
     const url = `/api/intelligence/geopolitical-feed?refresh=${force ? "true" : "false"}&maxAgeHours=${storeState.maxAgeHours}`;
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     if (res.ok) {
       const json = await res.json();
       if (json.data && Array.isArray(json.data) && json.data.length > 0) {
@@ -224,7 +225,7 @@ export function useGeopoliticalFeed() {
     const textToAnalyze = state.inputHeadline.trim();
 
     try {
-      const res = await fetch("/api/intelligence/analyze-headline", {
+      const res = await apiFetch("/api/intelligence/analyze-headline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ headline: textToAnalyze }),

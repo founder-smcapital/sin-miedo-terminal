@@ -6,10 +6,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInAnonymously,
   signOut,
   onAuthStateChanged,
+  getIdTokenResult,
   User
 } from "firebase/auth";
 import {
@@ -17,7 +16,6 @@ import {
   Firestore,
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   collection,
   onSnapshot,
@@ -59,12 +57,7 @@ export interface FirestoreUserProfile {
   id: string;
   email: string;
   displayName: string;
-  role: "admin" | "analyst" | "partner" | "founding_member";
-  tier: ClearanceTier;
-  deskCode: string;
-  deskAccess: string[];
-  createdAt: string;
-  lastLoginAt: string;
+  currency?: "USD" | "EUR";
   preferredDesk?: string;
   isCalmMode?: boolean;
 }
@@ -151,181 +144,45 @@ export const TIER_DESK_ACCESS: Record<string, string[]> = {
   ]
 };
 
-export const DEFAULT_DESK_ACCESS = TIER_DESK_ACCESS["Founding Member"];
-
-export const TIER_PASSCODES: Record<string, string> = {
-  "Founding Member": "SMC-FOUNDING-2026",
-  "Professional Allocator": "SMC-ALLOCATOR-2026",
-  "Institutional Desk": "SMC-INSTITUTIONAL-2026",
-  "Institutional Alpha": "SMC-INSTITUTIONAL-ALPHA",
-  "Sovereign Advisory": "SMC-SOVEREIGN-2026",
-  "Sovereign Desk": "SMC-SOVEREIGN-DESK"
-};
-
-export interface AuthorizedUserCredential {
-  email: string;
-  name: string;
-  tier: ClearanceTier;
-  passcode: string;
-  password?: string;
-  role: "admin" | "analyst" | "partner" | "founding_member";
-}
-
-// Authorized Institutional Accounts Whitelist
-// tradeinmotions@gmail.com is configured with Founding Member clearance.
-// Additional authorized institutional emails will be registered here.
-export const AUTHORIZED_USERS: AuthorizedUserCredential[] = [
-  {
-    email: "tradeinmotions@gmail.com",
-    name: "Member #01",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "mrodfher@gmail.com",
-    name: "Member #02",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "dana.j.spears@gmail.com",
-    name: "Member #03",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "kingsleftgold@gmail.com",
-    name: "Member #04",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "eduardoharo12@gmail.com",
-    name: "Member #05",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "ericapp36@proton.me",
-    name: "Member #06",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  },
-  {
-    email: "jjkexpansion042@gmail.com",
-    name: "Member #07",
-    tier: "Founding Member",
-    passcode: "SMC-FOUNDING-2026",
-    password: "SinMiedo2026!",
-    role: "founding_member"
-  }
+const CLEARANCE_TIERS: ClearanceTier[] = [
+  "Founding Member",
+  "Professional Allocator",
+  "Institutional Desk",
+  "Institutional Alpha",
+  "Sovereign Advisory",
+  "Sovereign Desk"
 ];
 
-export function findAuthorizedUser(email: string): AuthorizedUserCredential | undefined {
-  if (!email) return undefined;
-  return AUTHORIZED_USERS.find(
-    (u) => u.email.toLowerCase().trim() === email.toLowerCase().trim()
-  );
-}
+type UserRole = NonNullable<import("./types").UserSession["role"]>;
+const USER_ROLES: UserRole[] = ["admin", "analyst", "partner", "founding_member"];
 
-// Helper: Ensure user profile exists in Firestore and update profile data with selected tier
-export async function syncUserProfile(
-  user: User,
-  tier: ClearanceTier = "Founding Member",
-  passcode: string = "SMC-FOUNDING-2026"
-): Promise<FirestoreUserProfile> {
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
+export async function getAuthorizedSession(user: User): Promise<import("./types").UserSession> {
+  const { claims } = await getIdTokenResult(user, true);
+  const tier = claims.tier;
 
-  const resolvedAccess = TIER_DESK_ACCESS[tier] || DEFAULT_DESK_ACCESS;
-  const now = new Date().toISOString();
-
-  if (snap.exists()) {
-    const existing = snap.data() as FirestoreUserProfile;
-    // Update lastLoginAt AND selected tier & passcode so same email can test any tier freely!
-    await updateDoc(userRef, {
-      lastLoginAt: now,
-      email: user.email || existing.email || "tradeinmotions@gmail.com",
-      tier: tier,
-      deskCode: passcode || TIER_PASSCODES[tier] || existing.deskCode,
-      deskAccess: resolvedAccess
-    });
-    return {
-      ...existing,
-      id: user.uid,
-      tier: tier,
-      deskCode: passcode || TIER_PASSCODES[tier] || existing.deskCode,
-      deskAccess: resolvedAccess,
-      lastLoginAt: now
-    };
+  if (claims.terminalAccess !== true || typeof tier !== "string" || !CLEARANCE_TIERS.includes(tier as ClearanceTier)) {
+    throw new Error("This account has not been provisioned for terminal access. Contact your administrator.");
   }
 
-  // Create new profile
-  const newProfile: FirestoreUserProfile = {
-    id: user.uid,
-    email: user.email || "tradeinmotions@gmail.com",
-    displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Institutional Partner"),
-    role: (user.email === "tradeinmotions@gmail.com" || user.email === "founder@sinmiedocapital.com") ? "founding_member" : "analyst",
-    tier,
-    deskCode: passcode,
-    deskAccess: resolvedAccess,
-    createdAt: now,
-    lastLoginAt: now,
-    isCalmMode: false
+  const role = claims.role;
+  return {
+    isAuthenticated: true,
+    uid: user.uid,
+    email: user.email || "",
+    name: user.displayName || user.email?.split("@")[0] || "Institutional Trader",
+    tier: tier as ClearanceTier,
+    role: typeof role === "string" && USER_ROLES.includes(role as UserRole) ? role as UserRole : "analyst",
+    deskAccess: TIER_DESK_ACCESS[tier]
   };
-
-  await setDoc(userRef, newProfile);
-  return newProfile;
-}
-
-// Helper: Switch user tier in Firestore and return updated access
-export async function updateUserTierInFirestore(
-  uid: string,
-  tier: ClearanceTier,
-  customPasscode?: string
-): Promise<{ tier: ClearanceTier; deskCode: string; deskAccess: string[] }> {
-  const deskCode = customPasscode || TIER_PASSCODES[tier] || "SMC-FOUNDING-2026";
-  const deskAccess = TIER_DESK_ACCESS[tier] || DEFAULT_DESK_ACCESS;
-
-  if (uid && uid !== "usr-fallback-local") {
-    try {
-      const userRef = doc(db, "users", uid);
-      await updateDoc(userRef, {
-        tier,
-        deskCode,
-        deskAccess,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (err) {
-      console.warn("Firestore tier update fallback:", err);
-    }
-  }
-
-  return { tier, deskCode, deskAccess };
 }
 
 export {
   signInWithPopup,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInAnonymously,
   signOut,
   onAuthStateChanged,
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   collection,
   onSnapshot,

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { apiFetch } from "../api";
 import { createPortal } from "react-dom";
 import {
   ResponsiveContainer,
@@ -89,7 +90,7 @@ export const LiquidityDriverTracker: React.FC<LiquidityDriverTrackerProps> = ({
   const loadDebtBuyback = useCallback(async (isBackground = false) => {
     if (!isBackground) setIsBuybackLoading(true);
     try {
-      const res = await fetch("/api/liquidity/debt-buyback");
+      const res = await apiFetch("/api/liquidity/debt-buyback");
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -127,7 +128,7 @@ export const LiquidityDriverTracker: React.FC<LiquidityDriverTrackerProps> = ({
   const handleApplyDecisionScenario = async (paceB: number, title?: string, note?: string) => {
     setIsSubmittingDecision(true);
     try {
-      const res = await fetch("/api/liquidity/debt-buyback/decision", {
+      const res = await apiFetch("/api/liquidity/debt-buyback/decision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weeklyPaceB: paceB, title, note })
@@ -156,7 +157,7 @@ export const LiquidityDriverTracker: React.FC<LiquidityDriverTrackerProps> = ({
   const handleResetDecision = async () => {
     setIsSubmittingDecision(true);
     try {
-      const res = await fetch("/api/liquidity/debt-buyback/reset", { method: "POST" });
+      const res = await apiFetch("/api/liquidity/debt-buyback/reset", { method: "POST" });
       if (res.ok) {
         const result = await res.json();
         if (result.success && result.data) {
