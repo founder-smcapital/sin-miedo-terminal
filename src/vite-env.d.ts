@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __VERCEL_RUNTIME__: boolean;
+
 declare module "*.jpg" {
   const src: string;
   export default src;

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { apiFetch } from "../api";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -61,8 +62,8 @@ const ASSET_CONFIGS: Record<SupportedDepthAsset, AssetDepthConfig> = {
     baseSizeMin: 4.0,
     baseSizeMax: 22.0,
     wallSizeBoost: 48.0,
-    narrative: "Order flow reflects institutional dip-absorption around $77,100 absorbing carry-unwind volume.",
-    bidWallDesc: "Institutional Buy Block",
+    narrative: "Illustrative scenario around $77,100; this venue book does not establish broader institutional positioning.",
+    bidWallDesc: "Visible Bid Concentration",
     askWallDesc: "Resistance Profit Block"
   },
   "S&P 500": {
@@ -82,8 +83,8 @@ const ASSET_CONFIGS: Record<SupportedDepthAsset, AssetDepthConfig> = {
     baseSizeMin: 120.0,
     baseSizeMax: 650.0,
     wallSizeBoost: 1850.0,
-    narrative: "Heavy institutional limit bids at 7,650 provide systematic gamma buffer against volatility shocks.",
-    bidWallDesc: "Systematic Gamma Bid Block",
+    narrative: "Modeled depth scenario near 7,650; displayed levels are not exchange-wide futures depth.",
+    bidWallDesc: "Modeled Bid Concentration",
     askWallDesc: "Overhead Delta Hedge Wall"
   },
   "XAU/USD": {
@@ -103,8 +104,8 @@ const ASSET_CONFIGS: Record<SupportedDepthAsset, AssetDepthConfig> = {
     baseSizeMin: 1100.0,
     baseSizeMax: 4800.0,
     wallSizeBoost: 12400.0,
-    narrative: "Sovereign central bank reserve accumulation bids anchor prices firmly above $4,380/oz.",
-    bidWallDesc: "Sovereign CB Accumulation",
+    narrative: "PAXG/USD venue liquidity is a token-market proxy and does not measure central-bank bullion activity.",
+    bidWallDesc: "Visible Bid Concentration",
     askWallDesc: "Prop Derivative Strike Wall"
   },
   "IBEX 35": {
@@ -124,8 +125,8 @@ const ASSET_CONFIGS: Record<SupportedDepthAsset, AssetDepthConfig> = {
     baseSizeMin: 60.0,
     baseSizeMax: 280.0,
     wallSizeBoost: 950.0,
-    narrative: "Spanish banking sector dividend delta (Santander/BBVA) forms tight limit bid clustering around 19,780.",
-    bidWallDesc: "Bank Hedging Limit Block",
+    narrative: "Illustrative IBEX depth scenario; the levels are modeled and do not represent exchange order flow.",
+    bidWallDesc: "Modeled Bid Concentration",
     askWallDesc: "Index Resistance Supply"
   }
 };
@@ -168,14 +169,19 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
   });
   const [liveTapePrints, setLiveTapePrints] = useState<any[]>([]);
   const [liveCvdValue, setLiveCvdValue] = useState<number>(0);
+  const [tapeQuality, setTapeQuality] = useState<"provider" | "simulated" | "stale" | "unavailable">("unavailable");
+  const [footprintQuality, setFootprintQuality] = useState<"provider" | "simulated" | "stale" | "unavailable">("unavailable");
   const [footprintData, setFootprintData] = useState<any | null>(null);
-  const [currentProviderSource, setCurrentProviderSource] = useState<string>("Polygon.io Consolidated VWAP & SIP Tape");
+  const [tapeSource, setTapeSource] = useState<string>("No provider tape received");
+  const currentDepthData = liveDepthState[selectedAsset];
+  const currentProviderSource = currentDepthData?.source || "No provider book received; displaying simulated levels";
+  const hasProviderDepth = currentDepthData?.dataQuality === "provider" && Date.now() - currentDepthData.receivedAt < 15000;
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const audioCtxRef = useRef<any>(null);
 
-  // Synthesize non-intrusive institutional tick audio ping (zero external audio file dependency)
-  const triggerTapePing = useCallback((side: "BUY" | "SELL", isInstitutional: boolean) => {
+  // Play a size-tiered tick without inferring participant identity.
+  const triggerTapePing = useCallback((side: "BUY" | "SELL", isLargePrint: boolean) => {
     if (isAudioMuted) return;
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -190,13 +196,13 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
       const gain = ctx.createGain();
       osc.type = "sine";
       // Higher tone for buyer aggression, lower for seller absorption
-      osc.frequency.setValueAtTime(side === "BUY" ? (isInstitutional ? 960 : 720) : (isInstitutional ? 380 : 480), ctx.currentTime);
+      osc.frequency.setValueAtTime(side === "BUY" ? (isLargePrint ? 960 : 720) : (isLargePrint ? 380 : 480), ctx.currentTime);
       gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (isInstitutional ? 0.18 : 0.08));
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (isLargePrint ? 0.18 : 0.08));
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + (isInstitutional ? 0.20 : 0.10));
+      osc.stop(ctx.currentTime + (isLargePrint ? 0.20 : 0.10));
     } catch {
       // Audio autoplay policy fallback
     }
@@ -215,40 +221,45 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
     const fetchLiveBook = async () => {
       try {
         const sym = symMap[selectedAsset];
-        const res = await fetch(`/api/orderflow/depth/${sym}`);
-        if (res.ok) {
-          const depthJson = await res.json();
-          setLiveDepthState(prev => ({ ...prev, [selectedAsset]: depthJson }));
-          if (depthJson.source) setCurrentProviderSource(depthJson.source);
-        }
+        const res = await apiFetch(`/api/orderflow/depth/${sym}`);
+        if (!res.ok) throw new Error(`Depth request failed (${res.status})`);
+        const depthJson = await res.json();
+        setLiveDepthState(prev => ({ ...prev, [selectedAsset]: { ...depthJson, receivedAt: Date.now() } }));
         
-        const tapeRes = await fetch(`/api/orderflow/tape/${sym}`);
-        if (tapeRes.ok) {
-          const tapeJson = await tapeRes.json();
-          if (Array.isArray(tapeJson.trades) && tapeJson.trades.length > 0) {
+        const tapeRes = await apiFetch(`/api/orderflow/tape/${sym}`);
+        if (!tapeRes.ok) throw new Error(`Tape request failed (${tapeRes.status})`);
+        const tapeJson = await tapeRes.json();
+        setTapeSource(tapeJson.source || "Unspecified tape source");
+        setTapeQuality(tapeJson.dataQuality === "provider" ? "provider" : tapeJson.dataQuality === "unavailable" ? "unavailable" : "simulated");
+        if (Array.isArray(tapeJson.trades)) {
             setLiveTapePrints(tapeJson.trades.slice(0, 8));
-            // Check for institutional sweeps or block trades
+            // Provider data does not identify participants; flag prints by size tier only.
             const topPrint = tapeJson.trades[0];
-            if (topPrint && (topPrint.type === "INSTITUTIONAL" || topPrint.type === "BLOCK")) {
+            if (topPrint && (topPrint.type === "LARGE" || topPrint.type === "MEDIUM")) {
               setRecentSweepFlash({
-                text: `${topPrint.type} SWEEP: ${topPrint.side} ${topPrint.size} @ ${topPrint.price}`,
+                text: `${topPrint.type} SIZE-BASED PRINT: ${topPrint.side} ${topPrint.size} @ ${topPrint.price}`,
                 side: topPrint.side,
                 timestamp: Date.now()
               });
-              triggerTapePing(topPrint.side, topPrint.type === "INSTITUTIONAL");
+              triggerTapePing(topPrint.side, topPrint.type === "LARGE");
             }
-          }
-          if (typeof tapeJson.cumulativeVolumeDelta === "number") setLiveCvdValue(tapeJson.cumulativeVolumeDelta);
         }
+        if (typeof tapeJson.cumulativeVolumeDelta === "number") setLiveCvdValue(tapeJson.cumulativeVolumeDelta);
 
         // Fetch footprint cluster data
-        const fpRes = await fetch(`/api/orderflow/footprint/${sym}`);
-        if (fpRes.ok) {
-          const fpJson = await fpRes.json();
-          setFootprintData(fpJson);
-        }
+        const fpRes = await apiFetch(`/api/orderflow/footprint/${sym}`);
+        if (!fpRes.ok) throw new Error(`Footprint request failed (${fpRes.status})`);
+        const fpJson = await fpRes.json();
+        setFootprintData(fpJson);
+        setFootprintQuality(fpJson.dataQuality === "provider" ? "provider" : "simulated");
       } catch (err) {
-        // Graceful fallback to computed analytical levels
+        console.warn("[OrderFlow] Provider refresh failed; retaining last snapshot as stale.", err);
+        setLiveDepthState(prev => prev[selectedAsset]
+          ? { ...prev, [selectedAsset]: { ...prev[selectedAsset], dataQuality: "stale" } }
+          : prev
+        );
+        setTapeQuality((quality) => quality === "unavailable" ? "unavailable" : "stale");
+        setFootprintQuality((quality) => quality === "unavailable" ? "unavailable" : "stale");
       }
     };
 
@@ -582,7 +593,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
               </span>
             </div>
             <p className="text-[10px] text-[#8292A6]">
-              Visualizing institutional bid/ask supply walls and market liquidity pressure across BTC, S&P 500, Gold, & IBEX 35
+              Visualizing venue liquidity and modeled depth across BTC, S&P 500 proxy, PAXG/USD, and IBEX 35
             </p>
           </div>
         </div>
@@ -632,7 +643,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
           {/* Audio Feedback Toggle */}
           <button
             onClick={() => setIsAudioMuted(!isAudioMuted)}
-            title={isAudioMuted ? "Enable Institutional Tape Audio Pings" : "Mute Tape Audio Pings"}
+            title={isAudioMuted ? "Enable size-tiered tape audio pings" : "Mute tape audio pings"}
             className={`flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-bold transition-colors ${
               isAudioMuted 
                 ? "bg-black/60 text-[#8292A6] border-white/10 hover:border-[#B08D57]/30 hover:text-white"
@@ -663,7 +674,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
         </div>
       </div>
 
-      {/* Sweep & Block Trade Visual Flash Banner */}
+      {/* Large size-based print banner */}
       {recentSweepFlash && (Date.now() - recentSweepFlash.timestamp < 12000) && (
         <div className={`mx-4 px-3 py-1.5 rounded-lg border flex items-center justify-between text-[11px] animate-pulse transition-all ${
           recentSweepFlash.side === "BUY"
@@ -1025,8 +1036,16 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                 <span className="text-[10px] font-bold text-[#EDE9DE] uppercase tracking-wider">
                   {currentBook.asset} Micro Ladder
                 </span>
-                <span className="text-[8.5px] px-1.5 py-0.2 rounded bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30 font-mono">
-                  LIVE L2
+                <span className={`text-[8.5px] px-1.5 py-0.2 rounded border font-mono ${
+                  hasProviderDepth
+                    ? "bg-[#10B981]/15 text-[#34D399] border-[#10B981]/30"
+                    : "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                }`}>
+                  {hasProviderDepth
+                    ? "PROVIDER SNAPSHOT + MODELED EXTENSION"
+                    : currentDepthData?.dataQuality === "stale"
+                      ? "STALE BOOK SNAPSHOT"
+                      : "SIMULATED LEVELS"}
                 </span>
               </div>
 
@@ -1034,7 +1053,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
               <div className="mb-2 px-2 py-1 bg-black/60 border border-[#B08D57]/20 rounded text-[8.5px] flex items-center justify-between">
                 <span className="text-[#8292A6]">DATA TAPE:</span>
                 <span className="text-[#E5C794] font-mono font-bold truncate max-w-[170px]" title={currentProviderSource}>
-                  {currentProviderSource.replace("Direct (Live Executable Orderbook)", "L2").replace("Consolidated VWAP & SIP Tape", "SIP Tape")}
+                  {currentProviderSource}
                 </span>
               </div>
 
@@ -1056,8 +1075,8 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                       <span className="text-[#F87171] font-bold z-10 flex items-center gap-1">
                         {currentBook.config.formatPrice(ask.price)}
                         {isIcebergLevel && (
-                          <span className="text-[7px] px-1 py-0 rounded bg-[#E11D48]/30 text-[#FCA5A5] border border-[#E11D48]/50 uppercase font-mono tracking-tighter" title="Passive Institutional Iceberg Overhang">
-                            ICEBERG
+                          <span className="text-[7px] px-1 py-0 rounded bg-[#E11D48]/30 text-[#FCA5A5] border border-[#E11D48]/50 uppercase font-mono tracking-tighter" title="Large visible level; not evidence of hidden iceberg liquidity">
+                            SIZE OUTLIER
                           </span>
                         )}
                       </span>
@@ -1095,8 +1114,8 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                       <span className="text-[#34D399] font-bold z-10 flex items-center gap-1">
                         {currentBook.config.formatPrice(bid.price)}
                         {isIcebergBid && (
-                          <span className="text-[7px] px-1 py-0 rounded bg-[#10B981]/30 text-[#6EE7B7] border border-[#10B981]/50 uppercase font-mono tracking-tighter" title="Passive Institutional Iceberg Absorption">
-                            ICEBERG
+                          <span className="text-[7px] px-1 py-0 rounded bg-[#10B981]/30 text-[#6EE7B7] border border-[#10B981]/50 uppercase font-mono tracking-tighter" title="Large visible level; not evidence of hidden iceberg liquidity">
+                            SIZE OUTLIER
                           </span>
                         )}
                       </span>
@@ -1131,7 +1150,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                     <div key={p.id || pIdx} className="flex items-center justify-between font-mono">
                       <span className="text-[#BAC7D5]">{p.time} @ {p.price}</span>
                       <span className={p.side === "BUY" ? "text-[#34D399]" : "text-[#F87171]"}>
-                        {p.side} {p.size} {p.type === "INSTITUTIONAL" ? "★" : ""}
+                        {p.side} {p.size} ({p.type} SIZE)
                       </span>
                     </div>
                   ))}
@@ -1140,7 +1159,9 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
 
               <div className="text-[8px] text-[#8292A6] flex justify-between">
                 <span>Scope: ±{depthZoom}%</span>
-                <span>Provenance: Live Audited Tape</span>
+                <span className={`truncate max-w-[190px] ${tapeQuality === "simulated" ? "text-amber-300" : ""}`} title={tapeSource}>
+                  {tapeQuality === "provider" ? "Provider tape" : tapeQuality === "simulated" ? "Simulated tape" : tapeQuality === "stale" ? "Stale tape" : "Tape unavailable"}: {tapeSource}
+                </span>
               </div>
             </div>
           </div>
@@ -1168,7 +1189,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
               <div className="flex items-center gap-2 text-[10px]">
                 <span className="px-2 py-0.5 rounded bg-[#B08D57]/15 text-[#E5C794] border border-[#B08D57]/30 flex items-center gap-1 font-mono">
                   <Radio className="w-3 h-3 text-[#B08D57] animate-pulse" />
-                  LIVE FOOTPRINT TICK ENGINE
+                  {footprintQuality === "provider" ? "PROVIDER FOOTPRINT" : footprintQuality === "simulated" ? "SIMULATED FOOTPRINT" : footprintQuality === "stale" ? "STALE FOOTPRINT" : "FOOTPRINT UNAVAILABLE"}
                 </span>
               </div>
             </div>
@@ -1311,7 +1332,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                   ))
                 ) : (
                   <div className="p-2 bg-black/40 border border-white/5 rounded text-[8.5px] text-[#8292A6] text-center">
-                    Scanning order tape for institutional passive limit replenishment...
+                    Trade size tiers are heuristic; participant identity and passive replenishment are not provided.
                   </div>
                 )}
               </div>
@@ -1326,7 +1347,7 @@ export const MultiAssetOrderBookDepth: React.FC<MultiAssetOrderBookDepthProps> =
                   <div key={`fp-print-${p.id || pIdx}`} className="flex items-center justify-between font-mono">
                     <span className="text-[#BAC7D5]">{p.time} @ {p.price}</span>
                     <span className={p.side === "BUY" ? "text-[#34D399] font-bold" : "text-[#F87171] font-bold"}>
-                      {p.side} {p.size} {p.type === "INSTITUTIONAL" ? "★" : ""}
+                      {p.side} {p.size} ({p.type} SIZE)
                     </span>
                   </div>
                 ))}

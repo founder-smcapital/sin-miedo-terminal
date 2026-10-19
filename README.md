@@ -300,6 +300,25 @@ jobs:
 
 ---
 
+## Authentication & Server Secrets
+
+- Firebase sign-in alone does not grant terminal access. Provision users through a trusted Firebase Admin process with custom claims `terminalAccess: true` and a supported `tier`: `Founding Member`, `Professional Allocator`, `Institutional Desk`, `Institutional Alpha`, `Sovereign Advisory`, or `Sovereign Desk`. The optional `role` claim is one of `admin`, `analyst`, `partner`, or `founding_member`.
+- Firestore profile fields are not authorization data. The `admin: true` custom claim is required for profile administration; users may only update their own safe preference fields. Notes and alerts remain owner-scoped.
+- Keep provider credentials server-side in deployment secrets. `FINNHUB_API_KEY` has no built-in fallback. Polygon key administration requires a Firebase token carrying the `admin: true` custom claim; on Vercel, configure provider credentials as deployment secrets instead of runtime key changes.
+- In production, set a strong `INTERNAL_SERVICE_TOKEN` on both the Node service and Python backend. The Python API rejects internal requests if production authentication is enabled but that token is missing.
+- Configure `FIREBASE_SERVICE_ACCOUNT_JSON` on Vercel (or `GOOGLE_APPLICATION_CREDENTIALS` for local Node development) so the API can verify Firebase ID tokens. Never place service-account credentials in the client bundle or source control.
+- All API mutations, intelligence routes, `/api/orderflow/*`, the debt-buyback strategy read, and `/api/v1/*` routes except `/api/v1/health` require a valid Firebase ID token with `terminalAccess: true` and a supported `tier`. Basic market-data GETs and health checks remain public. Browser API requests attach the current Firebase token automatically.
+- Vercel deployments use HTTP polling for streaming data because serverless instances do not share the Express process's in-memory SSE broadcast state. Persistent hosts retain SSE behavior.
+- Accounts without the required Firebase claims are denied terminal access until provisioned. No client-side tier or passcode can grant access.
+
+## Frontend Market-Data Provenance
+
+- Initial values are labeled illustrative until an API response is received. A successful API response does not by itself certify a provider observation timestamp or exchange entitlement.
+- VIX snapshots are sourced from Yahoo Finance and may be delayed; the UI does not describe them as a direct CBOE feed. Chart history is labeled illustrative unless actual VIX observations are present; realized-volatility and VVIX overlays remain modeled.
+- DXY is an indicative quote or partial USD-basket proxy. Intraday history and cross-asset scenario curves are illustrative, and fixed correlation values are not calculated from live returns.
+- Gold history, volume, GPR points, and annotations are illustrative. The latest gold macro quote uses a PAXG/USD proxy and is not a physical bullion-market quote.
+- Order-book and tape surfaces distinguish provider snapshots from simulated levels/prints. Equity depth extensions and all generated footprint clusters are modeled; trade size tiers do not identify institutional participants.
+
 ## Full-Stack Deployment: Vercel & Container Platforms
 
 The platform is engineered with a **Dual-Mode Full-Stack Architecture**:
@@ -317,6 +336,9 @@ The platform is engineered with a **Dual-Mode Full-Stack Architecture**:
         - `POLYGON_ACCESS_KEY_ID` (Institutional account reference)
         - `OPENMARKET_API_KEY` (OpenMarket consensus verification)
         - `FINNHUB_API_KEY` (Global equities & energy proxies)
+        - `FIREBASE_SERVICE_ACCOUNT_JSON` (Server-only Firebase Admin credential for API token verification)
+        - `FIREBASE_PROJECT_ID` (Optional; defaults to the project's Firebase config)
+        - `INTERNAL_SERVICE_TOKEN` (Strong shared secret when routing to the Python backend)
         - `PYTHON_BACKEND_URL` (Optional: if routing SEC/FRED to external Render/Railway service)
      6. Click **Deploy**. Both the client and serverless API endpoints will deploy in unified lockstep.
 
@@ -327,4 +349,3 @@ The platform is engineered with a **Dual-Mode Full-Stack Architecture**:
      npm start
      ```
    - Automatically binds to `http://0.0.0.0:$PORT` (default: `3000`) and serves both the compiled Vite SPA and persistent WebSocket/SSE real-time streams.
-

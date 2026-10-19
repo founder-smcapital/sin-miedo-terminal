@@ -184,7 +184,6 @@ export interface UserSession {
   name?: string;
   role?: "admin" | "analyst" | "partner" | "founding_member";
   tier?: ClearanceTier;
-  passcode?: string;
   deskAccess?: string[];
   loginTime?: string;
   currency?: Currency;
@@ -290,4 +289,3 @@ export interface RelevantExecutiveSummary {
   relevantSlug: "yen" | "ibex" | "middleEast" | "shadowFleet" | "gold" | "debt_radar";
   isNew?: boolean;
 }
-

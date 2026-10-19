@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { apiFetch } from "../api";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -192,6 +193,8 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
     };
     lastSync: string;
     source: string;
+    historyType?: "provider" | "illustrative";
+    quoteStatus?: "indicative" | "stale" | "unavailable";
     intradayPoints?: DxyDataPoint[];
     fiveDayPoints?: Array<{ minute: string; price: number; sessionLabel?: string }>;
   } | null>(null);
@@ -201,7 +204,7 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
     if (isManual) setIsRefreshing(true);
     try {
       const url = isManual ? "/api/macro/dxy-refresh" : "/api/macro/dxy-intraday";
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
@@ -235,11 +238,12 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
   }, []);
 
   // Current metrics
-  const currentPrice = apiData?.currentPrice ?? 102.04;
-  const changePts = apiData?.changePts ?? -0.13;
-  const changePct = apiData?.changePct ?? -0.13;
-  const high24h = apiData?.high24h ?? 102.35;
-  const low24h = apiData?.low24h ?? 101.90;
+  const hasProviderSnapshot = apiData?.quoteStatus === "indicative" || apiData?.quoteStatus === "stale";
+  const currentPrice = hasProviderSnapshot ? apiData.currentPrice : 102.04;
+  const changePts = hasProviderSnapshot ? apiData.changePts : -0.13;
+  const changePct = hasProviderSnapshot ? apiData.changePct : -0.13;
+  const high24h = hasProviderSnapshot ? apiData.high24h : 102.35;
+  const low24h = hasProviderSnapshot ? apiData.low24h : 101.90;
   const isUp = changePts >= 0;
 
   // Premarket status calculation
@@ -356,12 +360,12 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
                 <h3 className="text-base sm:text-lg font-bold font-mono-data text-[#FBF8F1] tracking-wide flex items-center gap-1.5">
                   <span>US Dollar Index ($DXY) · Multi-Asset Correlation Radar</span>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-black/60 border border-[#253347] text-[#BAC7D5] font-normal">
-                    ICE Benchmark (DX-Y.NYB)
+                    DX-Y.NYB / USD Basket Proxy
                   </span>
                 </h3>
               </div>
               <p className="text-xs text-[#8292A6] font-mono-data mt-0.5">
-                Premarket USD Strength &amp; Cross-Asset Transmission · Tracking $MCL, $MNQ &amp; $MES Real-Time Beta
+                Indicative USD strength &amp; cross-asset scenario analysis · Correlations are not calculated from live returns
               </p>
             </div>
           </div>
@@ -398,11 +402,18 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
             ))}
           </div>
 
+          <div className="mb-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[9px] sm:text-[10px] font-mono-data text-amber-200">
+            {hasProviderSnapshot ? (apiData?.quoteStatus === "stale" ? "STALE INDICATIVE USD-BASKET SNAPSHOT" : "INDICATIVE USD-BASKET SNAPSHOT") : "ILLUSTRATIVE SEED QUOTE"}
+            {" · "}
+            Chart history and cross-asset curves are illustrative, not provider observations.
+            {apiData?.source ? ` · ${apiData.source}` : " · Waiting for API response"}
+          </div>
+
           {/* Refresh Button */}
           <button
             onClick={() => fetchDxyData(true)}
             disabled={isRefreshing}
-            title="Refresh Live DXY Quotes from ICE / Yahoo Finance"
+            title="Refresh the indicative USD-index snapshot"
             className="p-2 rounded-lg bg-black/60 border border-[#253347] text-[#BAC7D5] hover:text-[#FBF8F1] hover:border-[#B08D57]/60 transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[#E5C794]" : ""}`} />
@@ -510,7 +521,7 @@ export const DxyDollarIndexChart: React.FC<DxyDollarIndexChartProps> = ({
         </div>
 
         <div className="text-[10px] text-[#8292A6]">
-          Last sync: {secondsSinceSync}s ago · 24h Range:{" "}
+          Last API check: {secondsSinceSync}s ago · Reported range:{" "}
           <span className="text-[#EDE9DE] font-bold">{low24h.toFixed(3)}</span> –{" "}
           <span className="text-[#EDE9DE] font-bold">{high24h.toFixed(3)}</span>
         </div>

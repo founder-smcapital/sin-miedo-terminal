@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { apiFetch } from "../api";
 import { MacroDataState, InstitutionalBrief, RelevantExecutiveSummary, UserSession, Currency } from "../types";
 import { institutionalBriefs } from "../data/institutionalResearchData";
 import { generateRelevantExecutiveSummaries } from "../data/executiveSummariesData";
@@ -73,7 +74,7 @@ export const IntelligenceView: React.FC<IntelligenceViewProps> = ({
   const syncExecutiveSummaries = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch("/api/intelligence/executive-summary", {
+      const res = await apiFetch("/api/intelligence/executive-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

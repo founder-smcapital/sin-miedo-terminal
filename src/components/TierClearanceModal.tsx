@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   X,
   Award,
@@ -6,8 +6,6 @@ import {
   Sparkles,
   Check,
   Shield,
-  ArrowRight,
-  RefreshCw,
   Zap,
   Globe,
   Lock,
@@ -15,36 +13,21 @@ import {
   FileDown
 } from "lucide-react";
 import { ClearanceTier, UserSession } from "../types";
-import { TIER_PASSCODES } from "../firebase";
 
 interface TierClearanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   userSession: UserSession;
-  onSwitchTier: (tier: ClearanceTier) => Promise<void>;
 }
 
 export const TierClearanceModal: React.FC<TierClearanceModalProps> = ({
   isOpen,
   onClose,
   userSession,
-  onSwitchTier,
 }) => {
-  const [switchingTo, setSwitchingTo] = useState<ClearanceTier | null>(null);
-
   if (!isOpen) return null;
 
   const currentTier = userSession.tier || "Founding Member";
-
-  const handleSelect = async (tier: ClearanceTier) => {
-    if (tier === currentTier) return;
-    setSwitchingTo(tier);
-    try {
-      await onSwitchTier(tier);
-    } finally {
-      setSwitchingTo(null);
-    }
-  };
 
   const tiersConfig = [
     {
@@ -167,7 +150,7 @@ export const TierClearanceModal: React.FC<TierClearanceModalProps> = ({
               Currently testing as:{" "}
               <span className="text-[#EDE9DE] font-bold">{userSession.email || "tradeinmotions@gmail.com"}</span>
               {" — "}
-              Switch between tiers to immediately inspect visual gating, engine telemetry, and reports.
+              Tier access is provisioned by an administrator and cannot be changed from this client.
             </p>
           </div>
 
@@ -186,7 +169,6 @@ export const TierClearanceModal: React.FC<TierClearanceModalProps> = ({
           {tiersConfig.map((t) => {
             const Icon = t.icon;
             const active = isCurrent(t.id);
-            const isSwitching = switchingTo === t.id;
 
             return (
               <div
@@ -265,38 +247,15 @@ export const TierClearanceModal: React.FC<TierClearanceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Switch Action Button */}
+                {/* Clearance Status */}
                 <div className="mt-5 pt-3.5 border-t border-[#222C3D]">
-                  <button
-                    id={`switch-to-tier-${t.id.toLowerCase().replace(/\s+/g, "-")}-btn`}
-                    onClick={() => handleSelect(t.id)}
-                    disabled={active || isSwitching}
-                    className={`w-full py-2.5 px-3 rounded-lg font-mono-data text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:cursor-default ${
-                      active
-                        ? "bg-[#111724] border border-[#B08D57]/60 text-[#E5C794]"
-                        : t.btnClass
-                    }`}
-                  >
-                    {isSwitching ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Applying...</span>
-                      </>
-                    ) : active ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Active Clearance</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="truncate">Switch to {t.title}</span>
-                        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[9px] text-[#5A687C] font-mono-data text-center mt-1.5">
-                    Passcode: {TIER_PASSCODES[t.id] || "SMC-FOUNDING-2026"}
-                  </p>
+                  <div className={`w-full py-2.5 px-3 rounded-lg font-mono-data text-[10px] uppercase font-bold tracking-wider text-center ${
+                    active
+                      ? "bg-[#111724] border border-[#B08D57]/60 text-[#E5C794]"
+                      : "bg-[#0A101A] border border-[#222C3D] text-[#8292A6]"
+                  }`}>
+                    {active ? "Active clearance" : "Administrator provisioned"}
+                  </div>
                 </div>
               </div>
             );
@@ -307,9 +266,7 @@ export const TierClearanceModal: React.FC<TierClearanceModalProps> = ({
         <div className="mt-6 pt-4 border-t border-[#B08D57]/20 flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono-data text-[#8292A6]">
           <div className="flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-[#B08D57]" />
-            <span>
-              Real-time Firestore synchronization enabled. Switches persist across browser tabs and live reloads.
-            </span>
+            <span>Clearance is validated from server-issued authentication claims.</span>
           </div>
           <button
             onClick={onClose}

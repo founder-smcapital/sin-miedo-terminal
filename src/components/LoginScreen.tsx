@@ -1,25 +1,18 @@
 import React, { useState } from "react";
-import { UserSession, ClearanceTier } from "../types";
+import { UserSession } from "../types";
 import {
   ShieldCheck,
   Lock,
   Mail,
-  Key,
-  ArrowRight,
-  CheckCircle2
+  ArrowRight
 } from "lucide-react";
 import {
   auth,
   googleProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInAnonymously,
-  syncUserProfile,
-  DEFAULT_DESK_ACCESS,
-  TIER_PASSCODES,
-  TIER_DESK_ACCESS,
-  findAuthorizedUser
+  signOut,
+  getAuthorizedSession
 } from "../firebase";
 
 interface LoginScreenProps {
@@ -29,14 +22,9 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passcode, setPasscode] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Check if entered email matches pre-authorized accounts
-  const knownAuth = email.trim() ? findAuthorizedUser(email.trim()) : null;
-  const resolvedTier: ClearanceTier = knownAuth ? knownAuth.tier : "Founding Member";
 
   // Google Sign-In Flow
   const handleGoogleSignIn = async () => {
@@ -46,41 +34,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
-      const googleEmail = userCredential.user.email || "";
-      const googleKnownAuth = findAuthorizedUser(googleEmail);
-      const effectiveTier = googleKnownAuth ? googleKnownAuth.tier : "Founding Member";
-      const effectivePasscode = googleKnownAuth ? googleKnownAuth.passcode : (passcode || "SMC-FOUNDING-2026");
-      const effectiveName = googleKnownAuth ? googleKnownAuth.name : (userCredential.user.displayName || "Institutional Partner");
-
-      setStatusMessage("Verifying desk clearance with Firestore...");
-      const profile = await syncUserProfile(userCredential.user, effectiveTier, effectivePasscode);
-
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: userCredential.user.uid,
-        email: profile.email || googleEmail,
-        name: effectiveName,
-        tier: profile.tier || effectiveTier,
-        role: profile.role || "founding_member",
-        passcode: profile.deskCode || effectivePasscode,
-        deskAccess: profile.deskAccess || DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (err) {}
-
-      setIsAuthenticating(false);
+      setStatusMessage("Verifying server-provisioned desk clearance...");
+      const session = await getAuthorizedSession(userCredential.user);
       onLoginSuccess(session);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Google Auth error:", err);
+      setErrorMessage(err instanceof Error ? err.message : "Authentication failed. Verify your account and try again.");
+      if (auth.currentUser) void signOut(auth).catch((signOutError) => console.error("Failed to clear unprovisioned session:", signOutError));
+    } finally {
       setIsAuthenticating(false);
-      if (err.code === "auth/popup-closed-by-user") {
-        setErrorMessage("Authentication was cancelled in browser.");
-      } else {
-        setErrorMessage(err.message || "Failed to authenticate via Google SSO.");
-      }
+      setStatusMessage(null);
     }
   };
 
@@ -89,23 +52,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     if (e) e.preventDefault();
 
     const cleanEmail = email.trim();
-    if (!cleanEmail) {
-      setErrorMessage("Please enter your authorized institutional email address.");
-      return;
-    }
-
-    if (!password.trim()) {
-      setErrorMessage("Please enter your account access key / password.");
-      return;
-    }
-
-    // Gatekeeping: Check whitelist or valid clearance passcode
-    const userAuth = findAuthorizedUser(cleanEmail);
-    const validPasscode = userAuth ? userAuth.passcode : (TIER_PASSCODES[resolvedTier] || "SMC-FOUNDING-2026");
-    const enteredPasscodeMatches = passcode.trim() === validPasscode || passcode.trim() === "SMC-FOUNDING-2026";
-
-    if (!userAuth && !enteredPasscodeMatches) {
-      setErrorMessage(`Access Restricted: "${cleanEmail}" requires an authorized institutional email or valid desk clearance passcode.`);
+    if (!cleanEmail || !password) {
+      setErrorMessage("Enter your institutional email and password.");
       return;
     }
 
@@ -114,78 +62,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setStatusMessage("Verifying institutional credentials...");
 
     try {
-      let firebaseUser: any = null;
-
-      try {
-        const userCred = await signInWithEmailAndPassword(auth, cleanEmail, password);
-        firebaseUser = userCred.user;
-      } catch (signInErr: any) {
-        if (signInErr.code === "auth/user-not-found" || signInErr.code === "auth/invalid-credential") {
-          try {
-            const createCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-            firebaseUser = createCred.user;
-          } catch (createErr: any) {
-            const anonCred = await signInAnonymously(auth);
-            firebaseUser = anonCred.user;
-          }
-        } else {
-          const anonCred = await signInAnonymously(auth);
-          firebaseUser = anonCred.user;
-        }
-      }
-
-      setStatusMessage("Syncing clearance profile with Firestore...");
-
-      const effectiveTier = userAuth ? userAuth.tier : resolvedTier;
-      const effectivePasscode = userAuth ? userAuth.passcode : (passcode || "SMC-FOUNDING-2026");
-
-      let profile: any = null;
-      if (firebaseUser) {
-        profile = await syncUserProfile(
-          { ...firebaseUser, email: cleanEmail },
-          effectiveTier,
-          effectivePasscode
-        );
-      }
-
-      const effectiveName = userAuth ? userAuth.name : (profile?.displayName || cleanEmail.split("@")[0] || "Authorized Trader");
-      const effectiveRole = userAuth ? userAuth.role : (profile?.role || "founding_member");
-
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: firebaseUser?.uid || "usr-founding-persist",
-        email: cleanEmail,
-        name: effectiveName,
-        tier: profile?.tier || effectiveTier,
-        role: profile?.role || effectiveRole,
-        passcode: profile?.deskCode || effectivePasscode,
-        deskAccess: profile?.deskAccess || TIER_DESK_ACCESS[effectiveTier] || DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (err) {}
-
-      setIsAuthenticating(false);
+      const credential = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      setStatusMessage("Verifying server-provisioned desk clearance...");
+      const session = await getAuthorizedSession(credential.user);
       onLoginSuccess(session);
-    } catch (err: any) {
-      console.warn("Auth persistence warning:", err);
-      const session: UserSession = {
-        isAuthenticated: true,
-        uid: "usr-fallback-local",
-        email: cleanEmail,
-        name: cleanEmail.split("@")[0] || "Authorized Trader",
-        tier: resolvedTier,
-        passcode,
-        deskAccess: DEFAULT_DESK_ACCESS,
-        loginTime: new Date().toLocaleTimeString()
-      };
-      try {
-        sessionStorage.setItem("smc_authenticated_session", JSON.stringify(session));
-      } catch (e) {}
+    } catch (err) {
+      console.warn("Institutional authentication failed:", err);
+      setErrorMessage(err instanceof Error ? err.message : "Authentication failed. Verify your account and try again.");
+      if (auth.currentUser) void signOut(auth).catch((signOutError) => console.error("Failed to clear unprovisioned session:", signOutError));
+    } finally {
       setIsAuthenticating(false);
-      onLoginSuccess(session);
+      setStatusMessage(null);
     }
   };
 
@@ -278,12 +165,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 >
                   Institutional Email
                 </label>
-                {knownAuth && (
-                  <span className="text-[9.5px] font-mono-data text-[#10B981] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>Clearance: {knownAuth.tier}</span>
-                  </span>
-                )}
               </div>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3 top-3 text-[#B08D57]" />
@@ -317,32 +198,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   className="w-full bg-[#0B1019] border border-[#1E293B] focus:border-[#B08D57] rounded-sm py-2.5 pl-9 pr-3 text-xs text-[#EDE9DE] font-mono-data outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Optional Clearance Passcode */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label
-                  htmlFor="login-passcode"
-                  className="block text-[10px] font-mono-data uppercase text-[#8292A6] tracking-wider font-semibold"
-                >
-                  Desk Clearance Passcode
-                </label>
-                <span className="text-[9px] font-mono-data text-[#8292A6]">
-                  {knownAuth ? "Pre-approved" : "Optional for whitelisted users"}
-                </span>
-              </div>
-              <div className="relative">
-                <Key className="w-4 h-4 absolute left-3 top-3 text-[#B08D57]" />
-                <input
-                  id="login-passcode"
-                  type="text"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  placeholder={knownAuth ? "Verified via Institutional Record" : "e.g. SMC-FOUNDING-2026"}
-                  className="w-full bg-[#0B1019] border border-[#1E293B] focus:border-[#B08D57] rounded-sm py-2.5 pl-9 pr-3 text-xs text-[#E5C794] font-mono-data outline-none transition-all tracking-wider"
                 />
               </div>
             </div>

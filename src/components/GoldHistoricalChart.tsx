@@ -68,7 +68,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
           { timestamp: "16:00", price: 4188.40, volume: 3750, gpr: 368, comment: "COMEX futures volume acceleration" },
           { timestamp: "18:00", price: 4198.80, volume: 3920, gpr: 371, comment: "Session High $4,198.80 / oz test" },
           { timestamp: "20:00", price: 4182.30, volume: 1840, gpr: 366, comment: "Evening session floor holding" },
-          { timestamp: "LIVE", price: liveSpotPrice, volume: 2450, gpr: 364.5, comment: "Active SMC desk live tick feed" }
+          { timestamp: "Latest snapshot", price: liveSpotPrice, volume: 2450, gpr: 364.5, comment: "Illustrative chart endpoint anchored to the current macro ticker snapshot" }
         ];
 
       case "1W":
@@ -97,7 +97,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
           { timestamp: "Feb '26", price: 3920.00, volume: 590000, gpr: 286.0, isWarStart: true, comment: "⚡ OUTBREAK OF WAR IN IRAN: Kinetic strikes; GPR surges +61.5 pts in single month; Gold tests $3,920" },
           { timestamp: "Apr '26", price: 4080.00, volume: 680000, gpr: 332.0, comment: "Retaliatory missile exchanges; Gold decisively breaks $4,000/oz threshold" },
           { timestamp: "Jun '26", price: 4150.00, volume: 750000, gpr: 352.4, comment: "Persistent refining infrastructure drone attacks; institutional safe haven floor established" },
-          { timestamp: "Sep '26", price: liveSpotPrice, volume: 820000, gpr: 364.5, comment: "Current trading at $4,185+ / oz multi-year supercycle peak; DEFCON 2 GPR peak" }
+          { timestamp: "Illustrative endpoint", price: liveSpotPrice, volume: 820000, gpr: 364.5, comment: "Illustrative chart endpoint anchored to the current macro ticker snapshot" }
         ];
 
       case "5Y":
@@ -108,7 +108,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
           { timestamp: "2024", price: 2630.00, volume: 2100000, gpr: 245, comment: "De-dollarization momentum accelerates across Asia/ME" },
           { timestamp: "2025", price: 3420.00, volume: 2650000, gpr: 205.4, comment: "Central bank gold demand reaches record 32% of total" },
           { timestamp: "Feb '26", price: 3920.00, volume: 2980000, gpr: 286.0, isWarStart: true, comment: "⚡ OUTBREAK OF WAR IN IRAN: Direct kinetic strikes on Iranian facilities" },
-          { timestamp: "Sep '26", price: liveSpotPrice, volume: 3200000, gpr: 364.5, comment: "Structural repricing above $4,180/oz as global anchor asset; GPR 364.5" }
+          { timestamp: "Illustrative endpoint", price: liveSpotPrice, volume: 3200000, gpr: 364.5, comment: "Illustrative chart endpoint anchored to the current macro ticker snapshot" }
         ];
     }
   }, [timeframe, liveSpotPrice]);
@@ -168,8 +168,8 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
                 XAU/USD Gold Macro Supercycle & Geopolitical Valuation
               </h3>
               <span className="text-[9px] font-mono-data font-bold uppercase tracking-wider bg-[#B08D57]/25 text-[#E5C794] border border-[#B08D57]/50 px-2.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                LIVE SPOT $4,180+
+                <Info className="w-3 h-3" />
+                MACRO TICKER SNAPSHOT
               </span>
             </div>
             <p className="text-[10px] font-mono-data text-[#BAC7D5] mt-0.5 tracking-wider uppercase font-semibold">
@@ -195,6 +195,11 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
                 {tf}
               </button>
             ))}
+          </div>
+
+          <div className="relative mb-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[9px] sm:text-[10px] font-mono-data text-amber-200">
+            ILLUSTRATIVE HISTORY · Historical prices, volume, GPR points, and annotations below are demo values, not provider observations.
+            {" "}Latest ticker snapshot:             {goldTicker ? "macro feed value (PAXG/USD proxy; provider timestamp not certified)" : "illustrative seed value"}.
           </div>
 
           {/* Overlays Toggles */}
@@ -238,7 +243,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
               const headers = [
                 "Period / Milestone",
                 "Gold Spot Price (USD/oz)",
-                "Estimated Turnover (oz)",
+                "Illustrative Turnover (oz)",
                 "GPR Index (pts)",
                 "Sovereign Buying Floor",
                 "Kinetic War Phase",
@@ -260,9 +265,10 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
                 rows,
                 metaComments: [
                   "SIN MIEDO CAPITAL // GOLD SUPERCYCLE & GPR DUAL CORRELATION",
+                  "ILLUSTRATIVE HISTORY: Price, volume, GPR, and event values are not provider observations.",
                   `Spot Gold: $${liveSpotPrice.toFixed(2)} / oz (+${liveChangePct}%)`,
                   `Geopolitical Risk (GPR): ${macroData.engines.middleEastWarRisk.gprIndex} pts`,
-                  "Historical Correlation: +0.82 Pearson covariance",
+                  "Historical correlation is not calculated from provider observations.",
                 ],
               };
             }}
@@ -287,7 +293,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
 
       {/* 4 Stat Overview Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
-        {/* 1. Live Spot Level */}
+        {/* 1. Latest ticker snapshot */}
         <div className="bg-black/40 border border-[#B08D57]/20 rounded p-3 flex flex-col justify-between overflow-hidden">
           <div className="text-[10px] font-mono-data text-[#8292A6] uppercase tracking-wider truncate">
             Gold Spot (XAU/USD)
@@ -298,7 +304,7 @@ export const GoldHistoricalChart: React.FC<GoldHistoricalChartProps> = ({ macroD
             </div>
             <div className="flex items-center justify-between text-[10px] font-mono-data mt-1 whitespace-nowrap gap-1">
               <span className="text-[#10B981] font-semibold">+{liveChangePct}% (24H)</span>
-              <span className="text-[#8292A6]">Live Feed</span>
+              <span className="text-[#8292A6]">Macro snapshot</span>
             </div>
           </div>
           <div className="text-[9px] font-mono-data text-[#8292A6] mt-1 border-t border-[#B08D57]/10 pt-1 whitespace-nowrap truncate">

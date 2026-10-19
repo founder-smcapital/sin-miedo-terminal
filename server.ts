@@ -13,6 +13,7 @@ import {
   ReconciliationDLQManager
 } from "./src/reconciliation";
 import { SyntheticMarketDataGenerator, PRESET_GROUPS, PRESET_SYMBOLS } from "./src/generator";
+import { requireFirebaseAdmin, requireTerminalAccess } from "./src/server/firebaseAuth";
 
 const marketDataPipeline = new MarketDataValidationPipeline();
 const reconciliationEngine = new MarketDataReconciliationEngine();
@@ -58,6 +59,21 @@ const getHost = () => {
 const PORT = getPort();
 const HOST = getHost();
 
+function scheduleBackgroundTask(task: () => void, initialDelayMs: number, intervalMs: number): void {
+  if (process.env.VERCEL) return;
+  setTimeout(task, initialDelayMs);
+  setInterval(task, intervalMs);
+}
+
+function scheduleBackgroundInterval(task: () => void, intervalMs: number): void {
+  if (process.env.VERCEL) return;
+  setInterval(task, intervalMs);
+}
+
+function publicPolygonState(): PolygonValidationState {
+  return { ...polygonState, accessKeyId: null, maskedApiKey: null };
+}
+
 // High-performance response compression (gzip/deflate), bypassing real-time SSE streams to avoid buffer delay
 app.use(
   compression({
@@ -73,6 +89,23 @@ app.use(
 );
 
 app.use(express.json());
+
+app.use("/api", (req, res, next) => {
+  const pathname = req.originalUrl.split("?")[0];
+  if (req.method === "OPTIONS" || req.method === "HEAD") return next();
+  if (req.method !== "GET" ||
+      pathname === "/api/intelligence" ||
+      pathname.startsWith("/api/intelligence/") ||
+      pathname === "/api/liquidity/debt-buyback" ||
+      pathname.startsWith("/api/orderflow/") ||
+      pathname === "/api/futures/refresh" ||
+      pathname === "/api/macro/vix-refresh" ||
+      pathname === "/api/macro/dxy-refresh" ||
+      (pathname.startsWith("/api/v1/") && pathname !== "/api/v1/health")) {
+    return requireTerminalAccess(req, res, next);
+  }
+  return next();
+});
 
 // Initialize Gemini Client server-side
 const getGeminiClient = () => {
@@ -230,7 +263,7 @@ const liveMarketStore: LivePricesState = {
   hsi: { price: 20550.00, change24h: -0.65, high24h: 20820.00, low24h: 20410.00, prevClose: 20685.00, lastSync: Date.now(), source: "HKEX Hang Seng Live Proxy" },
   nasdaq: { price: 30886.20, change24h: +0.49, high24h: 30952.10, low24h: 30766.00, prevClose: 30733.90, lastSync: Date.now(), source: "Finnhub Direct SIP / QQQ Consolidated Tape" },
   ftse: { price: 8360.00, change24h: +0.18, high24h: 8395.00, low24h: 8330.00, prevClose: 8345.00, lastSync: Date.now(), source: "LSE FTSE 100 Proxy" },
-  vix: { price: 16.30, change24h: -1.21, high24h: 17.50, low24h: 16.10, prevClose: 16.50, lastSync: Date.now(), source: "CBOE Volatility / VIXY Proxy Tape" },
+  vix: { price: 16.30, change24h: -1.21, high24h: 17.50, low24h: 16.10, prevClose: 16.50, lastSync: 0, source: "Illustrative seed; no provider observation received" },
   ust10y: { price: 3.383, change24h: -1.5, high24h: 3.420, low24h: 3.360, prevClose: 3.398, lastSync: Date.now(), source: "U.S. Treasury Dept FiscalData Live" },
   ust2y: { price: 3.520, change24h: -2.1, high24h: 3.560, low24h: 3.500, prevClose: 3.541, lastSync: Date.now(), source: "U.S. Treasury Constant Maturity Proxy" },
   ust30y: { price: 3.466, change24h: +0.8, high24h: 3.490, low24h: 3.440, prevClose: 3.458, lastSync: Date.now(), source: "U.S. Treasury Dept FiscalData Live" },
@@ -240,7 +273,7 @@ const liveMarketStore: LivePricesState = {
   es10y: { price: 3.050, change24h: -1.2, high24h: 3.080, low24h: 3.030, prevClose: 3.062, lastSync: Date.now(), source: "Tesoro Público 10Y Bono Live" },
   jp10y: { price: 0.950, change24h: +1.2, high24h: 0.970, low24h: 0.930, prevClose: 0.938, lastSync: Date.now(), source: "Bank of Japan 10Y JGB Live" },
   uk10y: { price: 4.150, change24h: -3.4, high24h: 4.210, low24h: 4.130, prevClose: 4.184, lastSync: Date.now(), source: "DMO UK 10Y Gilt Live" },
-  dxy: { price: 102.04, change24h: -0.13, high24h: 102.35, low24h: 101.90, prevClose: 102.17, lastSync: Date.now(), source: "ICE US Dollar Index Live (DX-Y.NYB)" },
+  dxy: { price: 102.04, change24h: -0.13, high24h: 102.35, low24h: 101.90, prevClose: 102.17, lastSync: 0, source: "Illustrative seed; no provider observation received" },
 };
 
 // Sub-task 1: Crypto (Hyperliquid Primary with Kraken & Coinbase Secondary Fallbacks)
@@ -445,7 +478,7 @@ async function fetchFxMarketPrices() {
             low24h: Math.min(dxyCalc, liveMarketStore.dxy?.low24h || dxyCalc),
             prevClose: prevDxy,
             lastSync: Date.now(),
-            source: "Kraken Interbank L2 / G6 Basket"
+            source: "Indicative partial USD basket derived from Kraken EUR/USD and USD/JPY; not the ICE DXY benchmark"
           };
         }
         return;
@@ -759,7 +792,7 @@ async function fetchVixMarketPrices() {
           prevClose,
           history24h: rawIntra.length >= 4 ? rawIntra : generateAnchored24hHistory(liveVix, prevClose, high24h, low24h),
           lastSync: Date.now(),
-          source: "CBOE VIX Real-Time Live",
+          source: "Yahoo Finance ^VIX index quote (may be delayed; not a direct CBOE feed)",
           intradayPoints: parsedIntradayPoints.length > 5 ? parsedIntradayPoints : undefined
         };
       }
@@ -2468,7 +2501,7 @@ async function syncExternalFuturesPrices(): Promise<void> {
                       low24h: low,
                       prevClose: prevClose,
                       lastSync: Date.now(),
-                      source: "ICE US Dollar Index Live (DX-Y.NYB)"
+                      source: "Yahoo Finance DX-Y.NYB quote (may be delayed)"
                     };
                   }
                 }
@@ -3171,8 +3204,8 @@ function generateAutonomousFlashAlert() {
   }
 }
 
-// Run autonomous flash alert generator every 60 seconds
-setInterval(generateAutonomousFlashAlert, 60000);
+// Run autonomous flash alert generator every 60 seconds on persistent hosts.
+scheduleBackgroundInterval(generateAutonomousFlashAlert, 60000);
 
 const getLiveMacroData = () => {
   baseTickCount++;
@@ -4062,14 +4095,10 @@ async function verifyOpenMarketFeeds(): Promise<OpenMarketValidationState> {
   return openMarketState;
 }
 
-// Background scheduler: Initial check after boot, then every 60s
-setTimeout(() => {
+// Background scheduler: Initial check after boot, then every 60s.
+scheduleBackgroundTask(() => {
   verifyOpenMarketFeeds().catch(() => {});
-}, 1500);
-
-setInterval(() => {
-  verifyOpenMarketFeeds().catch(() => {});
-}, 60000);
+}, 1500, 60000);
 
 // ========================================================
 // Finnhub.io Real-Time US Equities & SIP Consolidated Tape
@@ -4131,14 +4160,13 @@ export interface FinnhubValidationState {
   error: string | null;
 }
 
-const FINNHUB_DEFAULT_KEY = "db0fhq9r01qtcjfhf89gdb0fhq9r01qtcjfhf8a0";
-const FINNHUB_API_KEY = (process.env.FINNHUB_API_KEY && process.env.FINNHUB_API_KEY.length > 25) ? process.env.FINNHUB_API_KEY : FINNHUB_DEFAULT_KEY;
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY?.trim() || "";
 
 const finnhubState: FinnhubValidationState = {
-  status: FINNHUB_API_KEY ? "connected" : "unconfigured",
+  status: FINNHUB_API_KEY ? "error" : "unconfigured",
   keyConfigured: !!FINNHUB_API_KEY,
   lastSync: null,
-  latencyMs: 25,
+  latencyMs: 0,
   quotes: {
     spy: null,
     qqq: null,
@@ -4154,16 +4182,15 @@ const finnhubState: FinnhubValidationState = {
     btcConsensus: null
   },
   news: [],
-  error: null
+  error: FINNHUB_API_KEY ? "Finnhub feed has not been verified yet." : "FINNHUB_API_KEY is not configured."
 };
 
 async function syncFinnhubEquities(): Promise<FinnhubValidationState> {
-  const activeKey = (process.env.FINNHUB_API_KEY && process.env.FINNHUB_API_KEY.length > 25) 
-    ? process.env.FINNHUB_API_KEY 
-    : FINNHUB_DEFAULT_KEY;
+  const activeKey = FINNHUB_API_KEY;
   if (!activeKey) {
     finnhubState.status = "unconfigured";
     finnhubState.keyConfigured = false;
+    finnhubState.error = "FINNHUB_API_KEY is not configured.";
     return finnhubState;
   }
 
@@ -4590,14 +4617,10 @@ async function syncFinnhubEquities(): Promise<FinnhubValidationState> {
   return finnhubState;
 }
 
-// Background scheduler for Finnhub: every 30s
-setTimeout(() => {
+// Background scheduler for Finnhub: every 30s.
+scheduleBackgroundTask(() => {
   syncFinnhubEquities().catch(() => {});
-}, 1000);
-
-setInterval(() => {
-  syncFinnhubEquities().catch(() => {});
-}, 30000);
+}, 1000, 30000);
 
 export interface PolygonQuote {
   ticker: string;
@@ -4929,14 +4952,10 @@ async function syncPolygonTape(): Promise<PolygonValidationState> {
   return polygonState;
 }
 
-// Background scheduler for Polygon: every 60s (strictly respects 5 req/min free tier)
-setTimeout(() => {
+// Background scheduler for Polygon: every 60s (strictly respects 5 req/min free tier).
+scheduleBackgroundTask(() => {
   syncPolygonTape().catch(() => {});
-}, 3000);
-
-setInterval(() => {
-  syncPolygonTape().catch(() => {});
-}, 60000);
+}, 3000, 60000);
 
 // Rate-Limiting & In-Flight Request Deduplication Mutexes
 let inFlightOpenMarketPromise: Promise<OpenMarketValidationState> | null = null;
@@ -4956,7 +4975,8 @@ const sseClients = new Set<express.Response>();
 
 function broadcastSSE(event: string, data: any) {
   if (sseClients.size === 0) return;
-  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  const payloadData = event === "polygon-verify" ? publicPolygonState() : data;
+  const payload = `event: ${event}\ndata: ${JSON.stringify(payloadData)}\n\n`;
   for (const client of sseClients) {
     try {
       client.write(payload);
@@ -5034,7 +5054,7 @@ function startMasterBroadcaster() {
   }, 10000);
 }
 
-startMasterBroadcaster();
+if (!process.env.VERCEL) startMasterBroadcaster();
 
 // API: Institutional Quantitative Endpoints (OpenBB, FRED, SEC EDGAR, CFTC, FINRA)
 // Serves macro yield curves, SEC insider filings, CFTC COT positioning, and FINRA dark pool flow.
@@ -5042,6 +5062,11 @@ startMasterBroadcaster();
 app.use("/api/v1", async (req, res, next) => {
   const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
   if (pythonBackendUrl && !pythonBackendUrl.includes(":8000")) {
+    const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
+    if (!internalToken) {
+      return res.status(503).json({ error: "Internal service authentication is not configured." });
+    }
+
     let timer: NodeJS.Timeout | null = null;
     try {
       const controller = new AbortController();
@@ -5054,16 +5079,18 @@ app.use("/api/v1", async (req, res, next) => {
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
-          "X-Internal-Token": process.env.INTERNAL_SERVICE_TOKEN || "sm-internal-quant-gateway-token",
+          "X-Internal-Token": internalToken,
         },
         signal: controller.signal,
       });
-      if (backendRes.ok) {
-        const data = await backendRes.json();
-        return res.status(backendRes.status).json(data);
-      }
-    } catch (_err) {
-      // Fall through to native institutional data engines
+      const body = await backendRes.text();
+      res.status(backendRes.status);
+      const contentType = backendRes.headers.get("content-type");
+      if (contentType) res.setHeader("Content-Type", contentType);
+      return res.send(body);
+    } catch (err) {
+      console.error("Python quant backend request failed:", err);
+      return res.status(502).json({ error: "Configured quant backend is unavailable." });
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -5653,14 +5680,14 @@ app.post("/api/finnhub/verify", async (req, res) => {
 // API: Polygon Status
 app.get("/api/polygon/status", (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=1, stale-while-revalidate=2");
-  res.json(polygonState);
+  res.json(publicPolygonState());
 });
 
 // API: Trigger Polygon Live Sync (Deduplicated across all 50+ users)
 app.post("/api/polygon/verify", async (req, res) => {
   const now = Date.now();
   if (now - lastPolygonSyncTime < POLYGON_COOLDOWN_MS) {
-    return res.json(polygonState);
+    return res.json(publicPolygonState());
   }
   if (!inFlightPolygonPromise) {
     inFlightPolygonPromise = syncPolygonTape()
@@ -5673,28 +5700,18 @@ app.post("/api/polygon/verify", async (req, res) => {
         inFlightPolygonPromise = null;
       });
   }
-  const result = await inFlightPolygonPromise;
-  res.json(result);
+  await inFlightPolygonPromise;
+  res.json(publicPolygonState());
 });
 
 // API: Configure / Update Polygon API Key at Runtime (Guarded)
-app.post("/api/polygon/configure", async (req, res) => {
-  // Institutional Zero-Trust Guard: Require admin token in production or when secret configured
-  const adminSecret = process.env.ADMIN_TOKEN || process.env.INTERNAL_SERVICE_TOKEN;
-  const authHeader = req.headers.authorization;
-  const providedToken = (req.headers["x-admin-token"] as string) || 
-    (req.headers["x-internal-token"] as string) ||
-    (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null);
-
-  if (process.env.NODE_ENV === "production" || adminSecret) {
-    if (!providedToken || (adminSecret && providedToken !== adminSecret)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Forbidden: Institutional admin clearance required to update provider credentials." 
-      });
-    }
+app.post("/api/polygon/configure", requireFirebaseAdmin, async (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(501).json({
+      success: false,
+      message: "Runtime provider-key configuration is not supported on Vercel. Configure POLYGON_API_KEY as a deployment secret."
+    });
   }
-
   const { apiKey, accessKeyId } = req.body || {};
   if (!apiKey || typeof apiKey !== "string" || apiKey.trim().length < 8) {
     return res.status(400).json({ success: false, message: "Valid Polygon API Key is required (minimum 8 characters)" });
@@ -5752,8 +5769,6 @@ app.post("/api/polygon/configure", async (req, res) => {
       tier: polygonState.tier,
       liveNbboEntitled: isNbboEntitled,
       marketStatus: polygonState.marketStatus,
-      accessKeyId: polygonState.accessKeyId,
-      maskedApiKey: polygonState.maskedApiKey,
       message: isNbboEntitled 
         ? "Polygon Key verified! Real-Time Level 2 NBBO & streaming quotes unlocked." 
         : "Polygon Key verified! Official SIP Daily Aggregates, VWAP & Volume active (5 req/min tier)."
@@ -5764,22 +5779,13 @@ app.post("/api/polygon/configure", async (req, res) => {
 });
 
 // API: Revert to Default Polygon Key (Guarded)
-app.post("/api/polygon/reset-key", async (req, res) => {
-  const adminSecret = process.env.ADMIN_TOKEN || process.env.INTERNAL_SERVICE_TOKEN;
-  const authHeader = req.headers.authorization;
-  const providedToken = (req.headers["x-admin-token"] as string) || 
-    (req.headers["x-internal-token"] as string) ||
-    (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null);
-
-  if (process.env.NODE_ENV === "production" || adminSecret) {
-    if (!providedToken || (adminSecret && providedToken !== adminSecret)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Forbidden: Institutional admin clearance required to reset provider credentials." 
-      });
-    }
+app.post("/api/polygon/reset-key", requireFirebaseAdmin, async (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(501).json({
+      success: false,
+      message: "Runtime provider-key configuration is not supported on Vercel. Configure POLYGON_API_KEY as a deployment secret."
+    });
   }
-
   runtimePolygonKey = null;
   runtimePolygonAccessKeyId = null;
   polygonState.isUserKey = Boolean(process.env.POLYGON_API_KEY && process.env.POLYGON_API_KEY.trim().length > 8);
@@ -5855,7 +5861,8 @@ app.get("/api/orderflow/depth/:symbol", async (req, res) => {
 
             return res.json({
               symbol: `${coin}/USD`,
-              source: "Coinbase Prime Institutional Level 2 Order Book (100% Real Live Depth)",
+              source: "Coinbase Exchange public Level 2 order book",
+              dataQuality: "provider",
               isRealTime: true,
               timestamp: Date.now(),
               midPrice,
@@ -5929,7 +5936,8 @@ app.get("/api/orderflow/depth/:symbol", async (req, res) => {
 
           return res.json({
             symbol: `${coin}/USD`,
-            source: "Hyperliquid L2 Direct (Live Executable Orderbook)",
+            source: "Hyperliquid public Level 2 order book",
+            dataQuality: "provider",
             isRealTime: true,
             timestamp: Date.now(),
             midPrice,
@@ -5988,7 +5996,8 @@ app.get("/api/orderflow/depth/:symbol", async (req, res) => {
 
           return res.json({
             symbol: "XAU/USD",
-            source: "Kraken PAXG Physical LBMA L2 Depth",
+            source: "Kraken PAXG/USD token-market Level 2 (gold proxy, not physical bullion)",
+            dataQuality: "provider",
             isRealTime: true,
             timestamp: Date.now(),
             midPrice,
@@ -6046,7 +6055,8 @@ app.get("/api/orderflow/depth/:symbol", async (req, res) => {
 
           return res.json({
             symbol: pairName === "EURUSD" ? "EUR/USD" : "USD/JPY",
-            source: "Kraken Interbank FX L2 Orderbook",
+            source: "Kraken FX order book",
+            dataQuality: "provider",
             isRealTime: true,
             timestamp: Date.now(),
             midPrice,
@@ -6138,10 +6148,9 @@ app.get("/api/orderflow/depth/:symbol", async (req, res) => {
 
     return res.json({
       symbol: rawSym,
-      source: isPolygonLiveEntitled 
-        ? "Polygon.io Real-Time Level 2 NBBO Feed" 
-        : "Polygon.io Consolidated VWAP & SIP Tape",
-      isRealTime: true,
+      source: "Modeled depth levels anchored to Polygon market data; not a provider order book",
+      dataQuality: "simulated",
+      isRealTime: false,
       timestamp: Date.now(),
       midPrice,
       spread,
@@ -6204,7 +6213,7 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
                 price: Number(px.toFixed(2)),
                 size: Number(sz.toFixed(4)),
                 side: isBuy ? "BUY" : "SELL",
-                type: sz > 1.0 ? "INSTITUTIONAL" : (sz > 0.3 ? "BLOCK" : "RETAIL"),
+                type: sz > 1.0 ? "LARGE" : (sz > 0.3 ? "MEDIUM" : "SMALL"),
                 delta: Number(delta.toFixed(4)),
                 runningCvd: Number(runningCvd.toFixed(4))
               };
@@ -6215,7 +6224,8 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
               trades,
               cumulativeVolumeDelta: Number(runningCvd.toFixed(4)),
               deltaRegime: runningCvd > 0 ? "BUYER_AGGRESSION_DOMINANT" : "SELLER_ABSORPTION_DOMINANT",
-              source: "Kraken PAXG Live Central Limit Order Book Tape (100% Real Trades)"
+              source: "Kraken PAXG/USD token-market trades (gold proxy, not physical bullion)",
+              dataQuality: "provider"
             });
           }
         }
@@ -6254,7 +6264,7 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
                 price: Number(px.toFixed(2)),
                 size: Number(sz.toFixed(4)),
                 side: isBuy ? "BUY" : "SELL",
-                type: sz > 1.5 ? "INSTITUTIONAL" : (sz > 0.35 ? "BLOCK" : "RETAIL"),
+                type: sz > 1.5 ? "LARGE" : (sz > 0.35 ? "MEDIUM" : "SMALL"),
                 delta: Number(delta.toFixed(4)),
                 runningCvd: Number(runningCvd.toFixed(4))
               };
@@ -6265,7 +6275,8 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
               trades,
               cumulativeVolumeDelta: Number(runningCvd.toFixed(4)),
               deltaRegime: runningCvd > 0 ? "BUYER_AGGRESSION_DOMINANT" : "SELLER_ABSORPTION_DOMINANT",
-              source: `Coinbase Prime Central Limit Order Book Tape (100% Real Live Trades)`,
+              source: "Coinbase Exchange public trade feed",
+              dataQuality: "provider",
               venue: "COINBASE_PRIME"
             });
           }
@@ -6300,7 +6311,7 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
                   price: Number(px.toFixed(2)),
                   size: Number(sz.toFixed(4)),
                   side: isBuy ? "BUY" : "SELL",
-                  type: sz > 1.0 ? "INSTITUTIONAL" : (sz > 0.25 ? "BLOCK" : "RETAIL"),
+                  type: sz > 1.0 ? "LARGE" : (sz > 0.25 ? "MEDIUM" : "SMALL"),
                   delta: Number(delta.toFixed(4)),
                   runningCvd: Number(runningCvd.toFixed(4))
                 };
@@ -6311,7 +6322,8 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
                 trades,
                 cumulativeVolumeDelta: Number(runningCvd.toFixed(4)),
                 deltaRegime: runningCvd > 0 ? "BUYER_AGGRESSION_DOMINANT" : "SELLER_ABSORPTION_DOMINANT",
-                source: "Kraken BTC/USD Live Matching Tape (100% Real Trades)",
+                source: "Kraken BTC/USD public trade feed",
+                dataQuality: "provider",
                 venue: "KRAKEN_CLOB"
               });
             }
@@ -6322,7 +6334,17 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
       }
     }
 
-    // 3. US Equities (Polygon.io Real-Time Trades if Entitled, else Polygon VWAP-Calibrated Prints)
+    if (rawSym.includes("IBEX")) {
+      return res.json({
+        symbol: "IBEX 35",
+        trades: [],
+        cumulativeVolumeDelta: 0,
+        source: "No direct IBEX 35 trade feed configured",
+        dataQuality: "unavailable"
+      });
+    }
+
+    // 3. US Equities (Polygon provider trades when available, otherwise modeled prints)
     const activePolygonKey = getActivePolygonKey();
     const ticker = rawSym.includes("QQQ") ? "QQQ" : (rawSym.includes("DIA") ? "DIA" : "SPY");
 
@@ -6351,7 +6373,7 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
               price: Number(px.toFixed(2)),
               size: sz,
               side: isBuy ? "BUY" : "SELL",
-              type: sz >= 200 ? "INSTITUTIONAL" : (sz >= 100 ? "BLOCK" : "RETAIL"),
+              type: sz >= 200 ? "LARGE" : (sz >= 100 ? "MEDIUM" : "SMALL"),
               delta,
               runningCvd: Math.round(runningCvd)
             };
@@ -6362,7 +6384,8 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
             trades,
             cumulativeVolumeDelta: Math.round(runningCvd),
             deltaRegime: runningCvd > 0 ? "BUYER_AGGRESSION_DOMINANT" : "SELLER_ABSORPTION_DOMINANT",
-            source: "Polygon.io Real-Time Level 2 Trades Stream (100% Real SIP Trades)"
+            source: "Polygon.io provider trades (not Level 2 order-book depth)",
+            dataQuality: "provider"
           });
         }
       }
@@ -6392,7 +6415,7 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
         price: Number((baseP + (isBuy ? 0.05 : -0.05) * (i % 4)).toFixed(2)),
         size,
         side: isBuy ? "BUY" : "SELL",
-        type: size >= (avgTradeSize * 3) ? "INSTITUTIONAL" : (size >= (avgTradeSize * 1.8) ? "BLOCK" : "RETAIL"),
+        type: size >= (avgTradeSize * 3) ? "LARGE" : (size >= (avgTradeSize * 1.8) ? "MEDIUM" : "SMALL"),
         delta,
         runningCvd: Math.round(runningCvd)
       });
@@ -6403,7 +6426,8 @@ app.get("/api/orderflow/tape/:symbol", async (req, res) => {
       trades,
       cumulativeVolumeDelta: Math.round(runningCvd),
       deltaRegime: runningCvd > 0 ? "BUYER_AGGRESSION_DOMINANT" : "SELLER_ABSORPTION_DOMINANT",
-      source: "Polygon.io Consolidated VWAP & SIP Volume Tape [Free Tier Key Active]"
+      source: "Simulated trade prints calibrated to Polygon session aggregates (not actual trades)",
+      dataQuality: "simulated"
     });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to generate tape prints", message: err?.message || err });
@@ -6555,6 +6579,7 @@ app.get("/api/orderflow/footprint/:symbol", async (req, res) => {
     res.json({
       symbol: rawSym,
       source,
+      dataQuality: "simulated",
       step,
       unit,
       bars,
@@ -6577,6 +6602,10 @@ app.get("/api/macro/live-pulse", (req, res) => {
 
 // API: Direct Real-Time Streaming Gateway (SSE / Scaled Singleton Fan-Out for 50+ Users)
 app.get("/api/macro/stream", (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(501).json({ error: "Streaming is unavailable on Vercel; use the polling endpoints." });
+  }
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -6606,7 +6635,7 @@ app.get("/api/macro/stream", (req, res) => {
   // Immediate baselines for this specific client
   res.write(`event: openmarket-verify\ndata: ${JSON.stringify(openMarketState)}\n\n`);
   res.write(`event: finnhub-verify\ndata: ${JSON.stringify(finnhubState)}\n\n`);
-  res.write(`event: polygon-verify\ndata: ${JSON.stringify(polygonState)}\n\n`);
+  res.write(`event: polygon-verify\ndata: ${JSON.stringify(publicPolygonState())}\n\n`);
   res.write(`event: validation-telemetry\ndata: ${JSON.stringify(marketDataPipeline.getAlertManager().getMetrics())}\n\n`);
   res.write(`event: drift-metrics\ndata: ${JSON.stringify(driftDetector.getAllMetrics())}\n\n`);
   res.write(`event: macro-pulse\ndata: ${JSON.stringify(getLiveMacroData())}\n\n`);
@@ -6647,6 +6676,10 @@ app.get("/api/futures", (req, res) => {
 
 // API: Direct Real-Time Futures SSE Stream Gateway
 app.get("/api/futures/stream", (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(501).json({ error: "Streaming is unavailable on Vercel; use the polling endpoint." });
+  }
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -6762,20 +6795,21 @@ app.all("/api/futures/calibrate-mcl", (req, res) => {
 // API: Real-Time CBOE VIX Volatility Index & Non-Stale Intraday Points Telemetry
 app.get("/api/macro/vix-intraday", (req, res) => {
   const now = new Date();
-  const vixStore = liveMarketStore.vix || { price: 18.95, change24h: -1.20, high24h: 21.64, low24h: 17.72, prevClose: 19.18, lastSync: Date.now(), source: "CBOE VIX Real-Time Live" };
-  const vixMicroDelta = Number((Math.sin(baseTickCount * 0.45) * 0.08).toFixed(2));
-  const liveVix = Number((vixStore.price + vixMicroDelta).toFixed(2));
+  const vixStore = liveMarketStore.vix || { price: 18.95, change24h: -1.20, high24h: 21.64, low24h: 17.72, prevClose: 19.18, lastSync: 0, source: "Illustrative seed; no provider observation received" };
+  const liveVix = vixStore.price;
   const prevClose = vixStore.prevClose || 19.18;
   const changePts = Number((liveVix - prevClose).toFixed(2));
   const changePct = Number(((changePts / prevClose) * 100).toFixed(2));
 
-  const intradayPoints = generateVixIntradaySeries(
-    liveVix,
-    prevClose,
-    vixStore.high24h || Math.max(liveVix, 21.64),
-    vixStore.low24h || Math.min(liveVix, 17.72),
-    vixStore.intradayPoints
-  );
+  const hasProviderHistory = Boolean(vixStore.intradayPoints && vixStore.intradayPoints.length > 5);
+  const intradayPoints = hasProviderHistory
+    ? vixStore.intradayPoints!
+    : generateVixIntradaySeries(
+        liveVix,
+        prevClose,
+        vixStore.high24h || Math.max(liveVix, 21.64),
+        vixStore.low24h || Math.min(liveVix, 17.72)
+      );
 
   const regime = liveVix < 15.0
     ? { tag: "COMPLACENCY / LOW VOL", color: "#10B981", code: "CALM" }
@@ -6803,7 +6837,10 @@ app.get("/api/macro/vix-intraday", (req, res) => {
     tickCount: baseTickCount,
     lastSync: now.toISOString(),
     lastSyncTimestamp: Date.now(),
-    source: vixStore.source || "CBOE VIX Real-Time Live",
+    observedAt: vixStore.lastSync || null,
+    quoteStatus: vixStore.lastSync > 0 ? (Date.now() - vixStore.lastSync > 15 * 60 * 1000 ? "stale" : "indicative") : "unavailable",
+    historyType: hasProviderHistory ? "provider" : "illustrative",
+    source: vixStore.source,
     pointsCount: intradayPoints.length,
     intradayPoints
   });
@@ -6813,21 +6850,22 @@ app.get("/api/macro/vix-intraday", (req, res) => {
 app.get("/api/macro/vix-refresh", async (req, res) => {
   await syncExternalMarketPrices();
   const now = new Date();
-  const vixStore = liveMarketStore.vix || { price: 18.95, change24h: -1.20, high24h: 21.64, low24h: 17.72, prevClose: 19.18, lastSync: Date.now(), source: "CBOE VIX Real-Time Live" };
-  const intradayPoints = generateVixIntradaySeries(
-    vixStore.price,
-    vixStore.prevClose,
-    vixStore.high24h,
-    vixStore.low24h,
-    vixStore.intradayPoints
-  );
+  const vixStore = liveMarketStore.vix || { price: 18.95, change24h: -1.20, high24h: 21.64, low24h: 17.72, prevClose: 19.18, lastSync: 0, source: "Illustrative seed; no provider observation received" };
+  const hasProviderHistory = Boolean(vixStore.intradayPoints && vixStore.intradayPoints.length > 5);
+  const intradayPoints = hasProviderHistory
+    ? vixStore.intradayPoints!
+    : generateVixIntradaySeries(vixStore.price, vixStore.prevClose, vixStore.high24h, vixStore.low24h);
   res.json({
     success: true,
-    message: "Live CBOE VIX feed refreshed",
+    message: "VIX provider request completed",
     currentPrice: vixStore.price,
     changePct: vixStore.change24h,
     source: vixStore.source,
     lastSync: now.toISOString(),
+    lastSyncTimestamp: Date.now(),
+    observedAt: vixStore.lastSync || null,
+    quoteStatus: vixStore.lastSync > 0 ? (Date.now() - vixStore.lastSync > 15 * 60 * 1000 ? "stale" : "indicative") : "unavailable",
+    historyType: hasProviderHistory ? "provider" : "illustrative",
     intradayPoints
   });
 });
@@ -6958,12 +6996,11 @@ app.get("/api/macro/dxy-intraday", (req, res) => {
     high24h: 102.35,
     low24h: 101.90,
     prevClose: 102.17,
-    lastSync: Date.now(),
-    source: "ICE US Dollar Index Live (DX-Y.NYB)"
+    lastSync: 0,
+    source: "Illustrative seed; no provider observation received"
   };
 
-  const dxyMicroDelta = Number((Math.sin(baseTickCount * 0.35) * 0.015).toFixed(3));
-  const liveDxy = Number((dxyStore.price + dxyMicroDelta).toFixed(3));
+  const liveDxy = Number(dxyStore.price.toFixed(3));
   const prevClose = dxyStore.prevClose || 102.17;
   const changePts = Number((liveDxy - prevClose).toFixed(3));
   const changePct = Number(((changePts / prevClose) * 100).toFixed(2));
@@ -7106,7 +7143,10 @@ app.get("/api/macro/dxy-intraday", (req, res) => {
     tickCount: baseTickCount,
     lastSync: now.toISOString(),
     lastSyncTimestamp: Date.now(),
-    source: dxyStore.source || "ICE US Dollar Index Live (DX-Y.NYB)",
+    observedAt: dxyStore.lastSync || null,
+    quoteStatus: dxyStore.lastSync > 0 ? (Date.now() - dxyStore.lastSync > 15 * 60 * 1000 ? "stale" : "indicative") : "unavailable",
+    historyType: "illustrative",
+    source: dxyStore.source,
     intradayPoints,
     fiveDayPoints: liveFuturesStore.DXY?.priceHistory5d || getAsset5dHistory("DXY", liveDxy)
   });
@@ -7122,8 +7162,8 @@ app.get("/api/macro/dxy-refresh", async (req, res) => {
     high24h: 102.35,
     low24h: 101.90,
     prevClose: 102.17,
-    lastSync: Date.now(),
-    source: "ICE US Dollar Index Live (DX-Y.NYB)"
+    lastSync: 0,
+    source: "Illustrative seed; no provider observation received"
   };
   const intradayPoints = generateDxyIntradaySeries(
     dxyStore.price,
@@ -7133,11 +7173,15 @@ app.get("/api/macro/dxy-refresh", async (req, res) => {
   );
   res.json({
     success: true,
-    message: "Live ICE US Dollar Index (DXY) feed refreshed",
+    message: "DXY provider request completed",
     currentPrice: dxyStore.price,
     changePct: dxyStore.change24h,
     source: dxyStore.source,
     lastSync: now.toISOString(),
+    lastSyncTimestamp: Date.now(),
+    observedAt: dxyStore.lastSync || null,
+    quoteStatus: dxyStore.lastSync > 0 ? (Date.now() - dxyStore.lastSync > 15 * 60 * 1000 ? "stale" : "indicative") : "unavailable",
+    historyType: "illustrative",
     intradayPoints
   });
 });
@@ -8427,14 +8471,10 @@ async function syncLiveCentralBankAndMacroNarrative(): Promise<void> {
   }
 }
 
-// Background scheduler for Central Bank & Institutional direct feeds (every 75s)
-setTimeout(() => {
+// Background scheduler for Central Bank & Institutional direct feeds (every 75s).
+scheduleBackgroundTask(() => {
   syncLiveCentralBankAndMacroNarrative().catch(() => {});
-}, 3000);
-
-setInterval(() => {
-  syncLiveCentralBankAndMacroNarrative().catch(() => {});
-}, 75000);
+}, 3000, 75000);
 
 app.get("/api/intelligence/geopolitical-feed", handleGeopoliticalFeedRequest);
 app.get("/api/intelligence/geopolitical-feed/refresh", handleGeopoliticalFeedRequest);

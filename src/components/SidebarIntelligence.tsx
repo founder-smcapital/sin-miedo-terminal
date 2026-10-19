@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MacroDataState, RelevantExecutiveSummary, UserSession, Currency } from "../types";
+import { apiFetch } from "../api";
 import { generateRelevantExecutiveSummaries } from "../data/executiveSummariesData";
 import {
   X,
@@ -93,7 +94,7 @@ export const SidebarIntelligence: React.FC<SidebarIntelligenceProps> = ({
   const fetchExecutiveSummary = async () => {
     setIsLoadingSummary(true);
     try {
-      const res = await fetch("/api/intelligence/executive-summary", {
+      const res = await apiFetch("/api/intelligence/executive-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

@@ -50,7 +50,7 @@ try:
 
         # Inter-service Authentication
         INTERNAL_SERVICE_TOKEN: str = Field(
-            default="sm-internal-quant-gateway-token",
+            default="",
             env="INTERNAL_SERVICE_TOKEN",
             description="Shared authentication secret between Node BFF and Python quant microservice"
         )
@@ -65,8 +65,7 @@ try:
             "https://io.sinmiedocapital.com",
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://sinmiedo-terminal.onrender.com",
-            "*"
+            "https://sinmiedo-terminal.onrender.com"
         ]
 
 except ImportError:
@@ -86,14 +85,13 @@ except ImportError:
         SEC_USER_AGENT: str = os.getenv("SEC_USER_AGENT", "SinMiedoCapital-QuantTerminal/2.4 (admin@sinmiedocapital.com)")
         CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "300"))
         REQUEST_TIMEOUT_SECONDS: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "15.0"))
-        INTERNAL_SERVICE_TOKEN: str = os.getenv("INTERNAL_SERVICE_TOKEN", "sm-internal-quant-gateway-token")
+        INTERNAL_SERVICE_TOKEN: str = os.getenv("INTERNAL_SERVICE_TOKEN", "")
         REQUIRE_INTERNAL_AUTH: bool = os.getenv("REQUIRE_INTERNAL_AUTH", "false").lower() == "true"
         CORS_ORIGINS: List[str] = [
             "https://io.sinmiedocapital.com",
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://sinmiedo-terminal.onrender.com",
-            "*"
+            "https://sinmiedo-terminal.onrender.com"
         ]
 
 settings = Settings()

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../../api";
 import {
   Landmark,
   TrendingDown,
@@ -48,7 +49,7 @@ export const DebtBuybackIntelligenceDossier: React.FC<DebtBuybackIntelligenceDos
   const loadData = useCallback(async (isBackground = false) => {
     if (!isBackground) setIsSyncing(true);
     try {
-      const res = await fetch("/api/liquidity/debt-buyback");
+      const res = await apiFetch("/api/liquidity/debt-buyback");
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -78,7 +79,7 @@ export const DebtBuybackIntelligenceDossier: React.FC<DebtBuybackIntelligenceDos
   const handleApplyDecision = async (paceB: number, title?: string, note?: string) => {
     setIsSyncing(true);
     try {
-      const res = await fetch("/api/liquidity/debt-buyback/decision", {
+      const res = await apiFetch("/api/liquidity/debt-buyback/decision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weeklyPaceB: paceB, title, note })
